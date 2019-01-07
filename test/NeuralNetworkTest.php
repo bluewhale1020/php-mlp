@@ -66,29 +66,29 @@ public function test_train() {
   $target = [1,1,0,0];
   $this->nn->train($features,$target,200);
 
-  $features = [0,1];
-  $expected = [1];
+  $features = [[0,1]];
+  $expected = [[1]];
 
   $result =$this->nn->run($features);
   print_r($result);
   //$this->assertEquals($expected,$result);
 
-  $features = [1,0];
-  $expected = [1];
+  $features = [[1,0]];
+  $expected = [[1]];
 
   $result =$this->nn->run($features);
   print_r($result);
   //$this->assertEquals($expected,$result);
 
-  $features = [1,1];
-  $expected = [0];
+  $features = [[1,1]];
+  $expected = [[0]];
 
   $result =$this->nn->run($features);
   print_r($result);
   //$this->assertEquals($expected,$result);
   
-  $features = [0,0];
-  $expected = [0];
+  $features = [[0,0]];
+  $expected = [[0]];
 
   $result =$this->nn->run($features);
   print_r($result);
@@ -122,26 +122,26 @@ public function test_run() {
   $this->nn->setWeightIH($weight_i_h);
   $this->nn->setWeightHO($weight_h_o);
 
-  $features = [0,1];
-  $expected = [1];
+  $features = [[0,1]];
+  $expected = [[1]];
 
   $result =$this->nn->run($features);
   $this->assertEquals($expected,$result);
 
-  $features = [1,0];
-  $expected = [1];
+  $features = [[1,0]];
+  $expected = [[1]];
 
   $result =$this->nn->run($features);
   $this->assertEquals($expected,$result);
 
-  $features = [1,1];
-  $expected = [0];
+  $features = [[1,1]];
+  $expected = [[0]];
 
   $result =$this->nn->run($features);
   $this->assertEquals($expected,$result);
   
-  $features = [0,0];
-  $expected = [0];
+  $features = [[0,0]];
+  $expected = [[0]];
 
   $result =$this->nn->run($features);
   $this->assertEquals($expected,$result);      

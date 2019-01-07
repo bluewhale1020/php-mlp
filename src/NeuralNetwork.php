@@ -68,18 +68,50 @@ class NeuralNetwork
 
         
         $records = count($features);
-        for ($idx=0; $idx < $epoch; $idx++) { 
-            print("#".($idx+1)."回目学習\n");
 
-            $this->train_network($features,$target,$records);
+        // for progressdata
+        $rates = [];
+        $points_checker = $epoch / 100 * 4;
+        if ($points_checker < 10) $points_checker = 10;
+
+        $execution_start_time = microtime(true);
+
+
+        for ($idx=0; $idx < $epoch; $idx++) { 
+            
+
+            $accuracy = $this->train_network($features,$target,$records);
+
+            if (!($idx % $points_checker) or $idx == ($epoch -1)) {
+                print("#".($idx+1)."回目学習   ");
+                $rates[] =$accuracy;
+                
+                print("学習時誤差:".number_format($accuracy,4)."\n");
+                print("<br />");
+
+            }
+                                    
         }
 
+        $execution_time = round( microtime(true) - $execution_start_time ,2);
+
+        $progressData = [
+            'Epochs'=>$epoch,
+            'Learning rate'=>$this->lr,
+            'Hidden neurons'=>$this->num_hidden_nodes,
+            'activation_func'=>'Relu',
+            'rates'=>$rates,
+            'point_checker'=>$points_checker,
+            'Execution time'=>$execution_time
+        ];
+
+        return $progressData;
     }
 
     protected function train_network($features,$target,$records){
         $delta_i_h = $this->calc->initDelta($this->weight_i_h);
         $delta_h_o = $this->calc->initDelta($this->weight_h_o);
-
+        $error_sum = [];
         foreach($features as $idx => $row){
             if (!is_array($row[0]) ){
                 $row = array($row);
@@ -101,6 +133,14 @@ class NeuralNetwork
             $y_act = $target[$idx];
 
             $error = $this->calc->matrix_sub([[$y_act]],$y_hat);
+            // for accuracy check
+            if(empty($error_sum)){
+                $error_sum  = $error;
+            }else{
+                $error_sum  = $this->calc->matrix_add($error_sum,$error);
+            }
+            
+
             $y_error_term = $error;
 
             $hidden_error = $this->calc->dot($error,$this->weight_h_o,true);
@@ -117,10 +157,31 @@ class NeuralNetwork
 
         }
 
+        //for accuracy check
+        $temp =$this->calc->matrix_divide($error_sum , $records);
+        $accuracy = $this->MSE(($temp));
+
         $temp = $this->calc->matrix_divide($this->calc->matrix_multiply($this->lr , $delta_h_o) , $records);
         $this->weight_h_o = $this->calc->matrix_add($temp,$this->weight_h_o);
         $temp = $this->calc->matrix_divide($this->calc->matrix_multiply($this->lr , $delta_i_h) , $records);
         $this->weight_i_h = $this->calc->matrix_add($temp,$this->weight_i_h);
+
+        return $accuracy;
+    }
+
+    protected function MSE($error){
+        //エラー行列の各要素を二乗し、平均で割る
+        $serror = [];
+        $total =0;
+        array_walk_recursive($error, function ($value) use (&$serror) {
+            $serror[] = $value*$value;
+        });
+        $total = count($serror);
+        if(!empty($total)){
+            return (array_sum($serror)/$total);
+        }else{
+            return null;
+        }
     }
 
     public function run($features){
@@ -128,42 +189,59 @@ class NeuralNetwork
         if (!is_array($features[0]) ){
             $features = array($features);
         }
-        
-        //h = W.X + b
-        $hidden_input = $this->calc->dot($features,$this->weight_i_h);
-        //y = f(h)
-        $hidden_output = $this->activationFunction($hidden_input);
 
-        //print_r($hidden_input);
-        //h = W.X + b
-        $final_input = $this->calc->dot($hidden_output,$this->weight_h_o);
-        $y_hat =$final_input;
-        //signals from final output layer
-        //$y_hat = $this->activationFunction($final_input);
+        $result = [];
+        foreach($features as $idx => $row){
+            if (!is_array($row[0]) ){
+                $row = array($row);
+            }       
+            //h = W.X + b
+            $hidden_input = $this->calc->dot($row,$this->weight_i_h);
+            //y = f(h)
+            $hidden_output = $this->activationFunction($hidden_input);
+
+            //print_r($hidden_input);
+            //h = W.X + b
+            $final_input = $this->calc->dot($hidden_output,$this->weight_h_o);
+            $y_hat =$final_input;
+            //signals from final output layer
+            //$y_hat = $this->activationFunction($final_input);
 
 
-        if(!empty($this->labels)){
-            return $this->selectLabel($y_hat[0]);
-        }else{
-            return $y_hat[0];
+            if(!empty($this->labels)){
+                $result[] = $this->selectLabel($y_hat[0]);
+            }else{
+                $result[] =  $y_hat[0];
+            }
         }
-
+        return $result;
         
     }
 
     public function selectLabel($output){
         //出力データ配列の数値を対応するラベルに変換して返す
         $result = [];
-        foreach ($output as $key => $value) {
-            $l_index = round($value);
+
+        $maxVal=0;
+        if(count($output) ==1){//output node が　１
+            $l_index = round($output[0]);
             if(!empty($this->labels[$l_index])){
                 $result[] = $this->labels[$l_index];
             }else{
-                $result[] = null;
-            }
+                $result[] =  null;
+            }         
+        }else{//複数のoutput node
 
 
+            $maxs    = array_keys($output, max($output));
+            $key_max = $maxs[0]; 
+            if(!empty($this->labels[$key_max])){
+                $result[] = $this->labels[$key_max];
+            }else{
+                $result[] =  null;
+            }                       
         }
+
         return $result;
        
     }
