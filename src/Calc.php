@@ -82,7 +82,7 @@ class Calc
     public function expandColumns($matrix,$num_column){
 
         if(!is_array($matrix[0])){// [3,9,2];
-            return expand1d_2d($matrix,$num_column);
+            return $this->expand1d_2d($matrix,$num_column);
         }elseif(count($matrix) == 1){
             // [[3,9,2]];
             return $this->expand1d_2d($matrix[0],$num_column);

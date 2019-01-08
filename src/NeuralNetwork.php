@@ -6,6 +6,7 @@ use Calc\Calc;
 
 class NeuralNetwork 
 {
+    const MODELTYPE = "neuralNetwork";
     protected $lr;
     protected $num_input_nodes;
     protected $num_hidden_nodes;
@@ -28,7 +29,18 @@ class NeuralNetwork
     public function getLabels() {
         return $this->labels;
     }
-
+    public function getLr() {
+        return $this->lr;
+    }
+    public function getInputNodes() {
+        return $this->num_input_nodes;
+    }
+    public function getHiddenNodes() {
+        return $this->num_hidden_nodes;
+    }
+    public function getOutputNodes() {
+        return $this->num_output_nodes;
+    }
     // setter
     public function setWeightIH($W) {
         $this->weight_i_h = $W;
@@ -231,8 +243,6 @@ class NeuralNetwork
                 $result[] =  null;
             }         
         }else{//複数のoutput node
-
-
             $maxs    = array_keys($output, max($output));
             $key_max = $maxs[0]; 
             if(!empty($this->labels[$key_max])){

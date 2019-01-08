@@ -31,7 +31,7 @@ class NeuralNetworkTest extends PHPUnit\Framework\TestCase {
       $output = [2.1,0.9,0.1];
       $labels = ["e","f","g"];
       $this->nn->setLabels($labels);
-      $expected = ["g","f","e"];
+      $expected = ["e"];
      $this->assertEquals($expected, $this->nn->selectLabel($output));
   }
 
