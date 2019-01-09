@@ -13,7 +13,7 @@ class Utility
         foreach ($prediction as $key => $value) {
             if(is_array($value)){ $value = $value[0];}
             $dtable .= '<dt>Actual  [ '.$target[$key].' ]</dt>';
-            $dtable .= '<dd>Predicted:    '.$value.'</dd>';
+            $dtable .= '<dd>Predicted:    '.sprintf("%.4f",$value).'</dd>';
         }
         $dtable .= '</dl>';
 

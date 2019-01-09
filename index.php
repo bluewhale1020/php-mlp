@@ -11,7 +11,8 @@ $input_nodes = 2;
 $hidden_nodes = 3;
 $output_nodes = 1;
 $lr = 0.01;
-$mlp = new NeuralNetwork($input_nodes,$hidden_nodes,$output_nodes,$lr);
+$active_func_name = 'tanh';// tanh , relu
+$mlp = new NeuralNetwork($input_nodes,$hidden_nodes,$output_nodes,$lr,$active_func_name);
 
 $w_ih_before = $mlp->getWeightIH();
 $w_ho_before = $mlp->getWeightHO();
@@ -26,7 +27,7 @@ $w_ho_before = $mlp->getWeightHO();
 $features =[[0,1],[1,0],[1,1],[0,0]];
 $target = [1,1,0,0];
 
-$progressData = $mlp->train($features,$target,3000);
+$progressData = $mlp->train($features,$target,10000);
 
 $g_labes = $g_vals = '';
 $graph = $progressData['rates'];

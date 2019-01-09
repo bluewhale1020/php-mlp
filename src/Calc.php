@@ -109,14 +109,16 @@ class Calc
         return $newmatrix;
     }
  
-    public function initWeight($cols,$rows){
-        //列数$cols 行数$rowsの行列を作成 データは平均０、偏差0.2のランダム数
+    public function initWeight($cols,$rows,$active_func_name='relu'){
+        //列数$cols 行数$rowsの行列を作成 データは適当な平均、偏差のランダム数
         $weightArray = [];
-
+        
+        //input_nodeと活性化関数から平均、偏差計算
+        list($mean,$std) = $this->getMeanStd($rows,$active_func_name);
         for ($i=0; $i < $rows; $i++) { 
             $weightArray[$i] = null;
             for ($j=0; $j < $cols; $j++) { 
-                $number = $this->gauss_ms(-1,1,0.2);
+                $number = $this->gauss_ms(-1,1,$mean,$std);
                 //$number = $this->rand(-1,1);
                 $weightArray[$i][$j] = $number;
             }
@@ -137,6 +139,29 @@ class Calc
         return $deltaArray;
 
     }   
+
+    public function getMeanStd($base,$active_func_name){
+        //baseと活性化関数から平均、偏差計算
+        if(empty($base)){
+            throw new \Exception('Base should not be 0.');
+           
+        }
+        $mean = 0;
+        switch ($active_func_name) {
+            case 'relu'://std * sqrt(2/n)
+                $std = sqrt(2/$base);
+                break;
+            case 'tanh'://std * sqrt(1/n) 
+                $std = sqrt(1/$base);
+    
+                    break;                
+            default://mean 0, std base^-5
+                $std = pow($base,-5);
+                break;
+        }
+        
+        return [$mean,$std];
+    }
     
      /**
      * Generate random float number.

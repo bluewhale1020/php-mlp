@@ -51,11 +51,11 @@ public function test_activationFunction() {
   $expected = [[7,0,9], [0,11,0]];
  $this->assertEquals($expected, $this->nn->activationFunction($this->h));
 }
-public function test_activation_function_der() {
+public function test_activationFunctionDer() {
   // h = [[7,-8,9], [-10,11,-12]]; 
 
   $expected = [[1,0,1], [0,1,0]];
- $this->assertEquals($expected, $this->nn->activation_function_der($this->h));
+ $this->assertEquals($expected, $this->nn->activationFunctionDer($this->h));
 }
 
 

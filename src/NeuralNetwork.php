@@ -7,6 +7,7 @@ use Calc\Calc;
 class NeuralNetwork 
 {
     const MODELTYPE = "neuralNetwork";
+    protected $active_func_name = "relu";
     protected $lr;
     protected $num_input_nodes;
     protected $num_hidden_nodes;
@@ -52,7 +53,7 @@ class NeuralNetwork
         $this->labels = $labels;
     }
 
-    public function __construct($num_input_nodes,$num_hidden_nodes,$num_output_nodes,$lr=0.01)
+    public function __construct($num_input_nodes,$num_hidden_nodes,$num_output_nodes,$lr=0.01,$active_func_name = 'relu')
     {
         //ニューラルネットワークの初期化　（インプットノード数、隠れノード数、出力ノード数、学習率）
         $this->calc = new Calc();
@@ -60,10 +61,11 @@ class NeuralNetwork
         $this->num_input_nodes = $num_input_nodes;
         $this->num_hidden_nodes = $num_hidden_nodes;
         $this->num_output_nodes = $num_output_nodes;
+        $this->active_func_name = $active_func_name;
 
         //weight配列を作成
-        $this->weight_i_h = $this->calc->initWeight($this->num_hidden_nodes,$this->num_input_nodes);
-        $this->weight_h_o = $this->calc->initWeight($this->num_output_nodes,$this->num_hidden_nodes);
+        $this->weight_i_h = $this->calc->initWeight($this->num_hidden_nodes,$this->num_input_nodes,$active_func_name);
+        $this->weight_h_o = $this->calc->initWeight($this->num_output_nodes,$this->num_hidden_nodes,$active_func_name);
         
         //
 
@@ -113,7 +115,7 @@ class NeuralNetwork
             'Input neurons'=>$this->num_input_nodes,
             'Hidden neurons'=>$this->num_hidden_nodes,
             'Output neurons'=>$this->num_output_nodes,
-            'activation_func'=>'Relu',
+            'activation_func'=>$this->active_func_name,
             'rates'=>$rates,
             'point_checker'=>$points_checker,
             'Execution time'=>$execution_time
@@ -159,8 +161,8 @@ class NeuralNetwork
 
             $hidden_error = $this->calc->dot($error,$this->weight_h_o,true);
 
-            $h_error_term =$this->calc->matrix_multiply($hidden_error , $this->activation_function_der($hidden_input)); 
-            //hidden_error_term = hidden_error * self.activation_function_der(hidden_outputs)
+            $h_error_term =$this->calc->matrix_multiply($hidden_error , $this->activationFunctionDer($hidden_input,$hidden_output)); 
+            //hidden_error_term = hidden_error * self.activationFunctionDer(hidden_outputs)
             //print("h_error_term + row:");
             //print_r($h_error_term);print_r($row);
             $temp = $this->calc->matrix_multiply($h_error_term,$row,true); 
@@ -270,28 +272,71 @@ class NeuralNetwork
 
     }
 
-    public function activationFunction($h){
+    public function activationFunction($h){//$hidden_input
+        switch ($this->active_func_name) {
+            case 'relu':
+                return $this->reluFunc($h);
+                break;
+                case 'tanh':
+                return $this->tanhFunc($h);
+                break;            
+            default:
+                return $this->reluFunc($h);
+                break;
+        }
+
+    }
+    
+    protected function reluFunc($h){
         //relu function
         $y_hat = filter_var($h, FILTER_CALLBACK, ['options' => function ($value) {
             return max(0,$value);
         }]);
-        //$y_hat = array_map("relu",$h);
 
         return $y_hat;
+    }
+
+    protected function tanhFunc($h){
+        //relu function
+        $y_hat = filter_var($h, FILTER_CALLBACK, ['options' => function ($value) {
+            return tanh($value);
+        }]);
+
+        return $y_hat;
+    }
+
+    public function activationFunctionDer($h,$fh){//$hidden_input,$hidden_output
+        switch ($this->active_func_name) {
+            case 'relu':
+                return $this->reluDer($h);
+                break;
+                case 'tanh':
+                return $this->tanhDer($fh);
+                break;            
+            default:
+                return $this->reluDer($h);
+                break;
+        }
 
     }
 
-    public function activation_function_der($h){
-        //relu function
+    protected function reluDer($h){
+        //relu der function
         $y_hat = filter_var($h, FILTER_CALLBACK, ['options' => function ($value) {
             return ($value > 0)? 1:0;
 
         }]);
-        //$y_hat = array_map("relu",$h);
 
         return $y_hat;
-
     }
+    protected function tanhDer($fh){
+        //tanh der function
+        // fh' = 1 - fh**2
+        $y_hat = filter_var($fh, FILTER_CALLBACK, ['options' => function ($value) {
+            return (1 - $value*$value);
+        }]);
 
+        return $y_hat;
+    }
 
 }
