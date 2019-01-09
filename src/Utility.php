@@ -7,6 +7,50 @@ use Exception;
 
 class Utility
 {
+
+    public function showPrediction($prediction,$target){
+        $dtable = '<dl>';
+        foreach ($prediction as $key => $value) {
+            if(is_array($value)){ $value = $value[0];}
+            $dtable .= '<dt>Actual  [ '.$target[$key].' ]</dt>';
+            $dtable .= '<dd>Predicted:    '.$value.'</dd>';
+        }
+        $dtable .= '</dl>';
+
+        echo $dtable;
+    }
+
+    public function dispMatrix($matrix,$title = "Matrix Table"){
+        $rows = count($matrix);
+        $cols = count($matrix[0]);
+
+        $table = '<table class="table text-center table-striped"><thead class="thead-light"><tr>';        
+
+        for ($i=0; $i <= $cols; $i++) { 
+            if($i == 0){
+                $table .='<th></th>';
+                continue;
+            }
+            $table .='<th scope="col">'.($i-1).'</th>';
+        }
+
+        $table .= '</tr></thead><tbody>';
+
+        foreach ($matrix as $num_row => $row) {
+            $table .= "<tr>";
+            $table .= '<th scope="row">'.$num_row."</th>";
+            foreach ($row as $idx => $value) {
+                $table .= "<td>".$value."</td>";
+            }
+            $table .="</tr>";
+        }
+        $table .="</tbody></table>";
+
+        echo "<h4>$title</h4>";
+        echo $table;
+
+    }
+
     public function saveModel($model,$path){
         //学習済みモデルの保存
         $modelData = serialize($model);

@@ -110,7 +110,9 @@ class NeuralNetwork
         $progressData = [
             'Epochs'=>$epoch,
             'Learning rate'=>$this->lr,
+            'Input neurons'=>$this->num_input_nodes,
             'Hidden neurons'=>$this->num_hidden_nodes,
+            'Output neurons'=>$this->num_output_nodes,
             'activation_func'=>'Relu',
             'rates'=>$rates,
             'point_checker'=>$points_checker,

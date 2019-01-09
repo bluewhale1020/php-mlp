@@ -2,14 +2,19 @@
 ini_set('display_errors', 'On');
 error_reporting(E_ALL | E_STRICT);
 
-require './src/NeuralNetwork.php';
+//require './src/NeuralNetwork.php';
+require './src/Utility.php';
 use NeuralNetwork\NeuralNetwork;
+use Utility\Utility;
 
 $input_nodes = 2;
 $hidden_nodes = 3;
 $output_nodes = 1;
 $lr = 0.01;
 $mlp = new NeuralNetwork($input_nodes,$hidden_nodes,$output_nodes,$lr);
+
+$w_ih_before = $mlp->getWeightIH();
+$w_ho_before = $mlp->getWeightHO();
 
 // $progressData = [
 //     'Epochs'=>$epoch,
@@ -18,7 +23,10 @@ $mlp = new NeuralNetwork($input_nodes,$hidden_nodes,$output_nodes,$lr);
 //     'rates'=>$rates,
 //     'Execution time'=>$execution_time
 // ];
-$progressData = $mlp->train([[0,1],[1,0],[1,1],[0,0]],[1,1,0,0],3000);
+$features =[[0,1],[1,0],[1,1],[0,0]];
+$target = [1,1,0,0];
+
+$progressData = $mlp->train($features,$target,3000);
 
 $g_labes = $g_vals = '';
 $graph = $progressData['rates'];
@@ -30,78 +38,87 @@ foreach($graph as $num => $val) {
 $g_labes = trim($g_labes, ',');
 $g_vals = trim($g_vals, ',');
 
+
+$util = new Utility();
+
 ?>
 
 <html>
 <head>
-	<script src="https://code.jquery.com/jquery-2.2.4.min.js" integrity="sha256-BbhdlvQf/xTY9gja0Dq3HiwQF8LaCRTXxZKRutelT44=" crossorigin="anonymous"></script>
+	<!-- <script src="https://code.jquery.com/jquery-2.2.4.min.js" integrity="sha256-BbhdlvQf/xTY9gja0Dq3HiwQF8LaCRTXxZKRutelT44=" crossorigin="anonymous"></script> -->
+	<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/1.1.1/Chart.min.js"></script>
+	<script src="https://code.jquery.com/jquery-2.2.4.min.js" integrity="sha256-BbhdlvQf/xTY9gja0Dq3HiwQF8LaCRTXxZKRutelT44=" crossorigin="anonymous"></script>
+
+<!--Bootstrap４に必要なCSSとJavaScriptを読み込み-->
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js" integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy" crossorigin="anonymous"></script>
+
 	<style>
-		body { font-family: monospace; margin: 50px; }
+		/* body { font-family: monospace; margin: 50px; }
 		circle { display:none; }
-		.center { text-align:center; }
+		.center { text-align:center; } */
 	</style>
 </head>
 <body>
 
-<h2 class="center">Activation function: <?= ucwords($progressData['activation_func']) ?></h2>
+<br />
+<br />
+<hr />
+<div class="container">
+
+<div class="row">
+    <div class="col-4 alert alert-info">
+	<ul>
+	<li>Input neurons: <?= $progressData['Input neurons'] ?></li>
+	<li>Hidden neurons: <?= $progressData['Hidden neurons'] ?></li>
+	<li>Output neurons: <?= $progressData['Output neurons'] ?></li>
+	<li>Learning rate: <?= $progressData['Learning rate'] ?></li>
+	<li>Epochs: <?= $progressData['Epochs'] ?></li>
+	<li>Execution time: <?= $progressData['Execution time'] ?> sec</li>
+	</ul>
+    </div>
+    <div class="col-8">
+	<h2 class="text-center">Activation function: <?= ucwords($progressData['activation_func']) ?></h2>
 
 <div class="chart" style="width:600px; margin:20px auto;">
 	<canvas height="200" id="lineChart" style="height:400px; margin:20px auto;"></canvas>
+    </div>
+	</div>
+
+
 </div>
 
-
 <br />
-<h3>Hidden neurons: <?= $progressData['Hidden neurons'] ?></h3>
-<h3>Learning rate: <?= $progressData['Learning rate'] ?></h3>
-<h3>Epochs: <?= $progressData['Epochs'] ?></h3>
-<h3>Execution time: <?= $progressData['Execution time'] ?> sec</h3>
-
-<br />
-<br />
-
-
-
-
 
 <?php
-	// echo '<hr /><h1>Prediction:</h1>';
-	// foreach($xor_in as $index => $input) {
-	// 	$prediction = $brain->forward($input, $w1, $b1, $w2, $b2);
+	echo '<hr /><h1>Prediction:</h1>';
+	$prediction = $mlp->run($features);
 
-	// 	sm( $prediction['A'] );
-	// }
+	$util->showPrediction($prediction,$target);
 
-	// echo '<hr /><h1>Before</h1>';
-	// echo '<br /><h4>Weights matrix W1</h4>';
-	// sm($w1_before);
-	// echo '<br /><h4>Bias matrix B1</h4>';
-	// sm($b1_before);
-	// echo '<br /><h4>Weights matrix W2</h4>';
-	// sm($w2_before);
-	// echo '<br /><h4>Bias matrix B2</h4>';
-	// sm($b2_before);
-	
-	// echo '<hr /><h1>After</h1>';
-	// echo '<br /><h4>Weights matrix W1</h4>';
-	// sm($w1);
-	// echo '<br /><h4>Bias matrix B1</h4>';
-	// sm($b1);
-	// echo '<br /><h4>Weights matrix W2</h4>';
-	// sm($w2);
-	// echo '<br /><h4>Bias matrix B2</h4>';
-	// sm($b2);
-	// echo '<hr />';
-	
-	// $str  = '$w1 = $w1_before = '.var_export($w1_before, true).';' ."\n";
-	// $str .= '$b1 = $b1_before = '.var_export($b1_before, true).';' ."\n";
-	// $str .= '$w2 = $w2_before = '.var_export($w2_before, true).';' ."\n";
-	// $str .= '$b2 = $b2_before = '.var_export($b2_before, true).';' ."\n";
+echo '<hr /><h1>Before</h1>';
 
-	// dd($str, false);
+$util->dispMatrix( $w_ih_before,"Weight_Input_Hidden");
+echo "<br />";
+$util->dispMatrix( $w_ho_before,"Weight_Hidden_Output");
+echo "<br />";
+
+echo '<hr /><h1>After</h1>';
+
+$util->dispMatrix( $mlp->getWeightIH(),"Weight_Input_Hidden");
+echo "<br />";
+$util->dispMatrix( $mlp->getWeightHO(),"Weight_Hidden_Output");
+echo "<br />";
+
+
+	echo '<hr />';
+
 ?>
 
-
+</div>
 
 
 <script>
