@@ -7,7 +7,7 @@ use Calc\Calc;
 class NeuralNetwork 
 {
     const MODELTYPE = "neuralNetwork";
-    protected $active_func_name = "relu";
+    protected $active_func_name;
     protected $lr;
     protected $num_input_nodes;
     protected $num_hidden_nodes;
@@ -55,7 +55,7 @@ class NeuralNetwork
 
     public function __construct($num_input_nodes,$num_hidden_nodes,$num_output_nodes,$lr=0.01,$active_func_name = 'relu')
     {
-        //ニューラルネットワークの初期化　（インプットノード数、隠れノード数、出力ノード数、学習率）
+        //ニューラルネットワークの初期化　（インプットノード数、隠れノード数、出力ノード数、学習率、活性化関数名[relu tanh]）
         $this->calc = new Calc();
         $this->lr = $lr;
         $this->num_input_nodes = $num_input_nodes;
@@ -72,7 +72,7 @@ class NeuralNetwork
 
     }
 
-    public function train($features,$target,$epoch = 20,$labels = false){
+    public function train($features,$target,$epoch = 2000,$labels = false){
         //ニューラルネットワークを教師データで学習させる
         if($labels){
             $target = $this->convTargetLabels($target);
@@ -87,6 +87,7 @@ class NeuralNetwork
         $rates = [];
         $points_checker = $epoch / 100 * 4;
         if ($points_checker < 10) $points_checker = 10;
+        ///
 
         $execution_start_time = microtime(true);
 
@@ -149,20 +150,22 @@ class NeuralNetwork
             $y_act = $target[$idx];
 
             $error = $this->calc->matrix_sub([[$y_act]],$y_hat);
+
             // for accuracy check
             if(empty($error_sum)){
                 $error_sum  = $error;
             }else{
                 $error_sum  = $this->calc->matrix_add($error_sum,$error);
             }
-            
+            /////
 
             $y_error_term = $error;
 
             $hidden_error = $this->calc->dot($error,$this->weight_h_o,true);
 
-            $h_error_term =$this->calc->matrix_multiply($hidden_error , $this->activationFunctionDer($hidden_input,$hidden_output)); 
             //hidden_error_term = hidden_error * self.activationFunctionDer(hidden_outputs)
+            $h_error_term =$this->calc->matrix_multiply($hidden_error , $this->activationFunctionDer($hidden_input,$hidden_output)); 
+            
             //print("h_error_term + row:");
             //print_r($h_error_term);print_r($row);
             $temp = $this->calc->matrix_multiply($h_error_term,$row,true); 
@@ -173,14 +176,15 @@ class NeuralNetwork
 
         }
 
-        //for accuracy check
-        $temp =$this->calc->matrix_divide($error_sum , $records);
-        $accuracy = $this->MSE(($temp));
-
         $temp = $this->calc->matrix_divide($this->calc->matrix_multiply($this->lr , $delta_h_o) , $records);
         $this->weight_h_o = $this->calc->matrix_add($temp,$this->weight_h_o);
         $temp = $this->calc->matrix_divide($this->calc->matrix_multiply($this->lr , $delta_i_h) , $records);
         $this->weight_i_h = $this->calc->matrix_add($temp,$this->weight_i_h);
+
+
+        //for accuracy check
+        $temp =$this->calc->matrix_divide($error_sum , $records);
+        $accuracy = $this->MSE(($temp));
 
         return $accuracy;
     }
@@ -277,7 +281,7 @@ class NeuralNetwork
             case 'relu':
                 return $this->reluFunc($h);
                 break;
-                case 'tanh':
+            case 'tanh':
                 return $this->tanhFunc($h);
                 break;            
             default:
@@ -297,7 +301,7 @@ class NeuralNetwork
     }
 
     protected function tanhFunc($h){
-        //relu function
+        //tanh function
         $y_hat = filter_var($h, FILTER_CALLBACK, ['options' => function ($value) {
             return tanh($value);
         }]);
@@ -310,7 +314,7 @@ class NeuralNetwork
             case 'relu':
                 return $this->reluDer($h);
                 break;
-                case 'tanh':
+            case 'tanh':
                 return $this->tanhDer($fh);
                 break;            
             default:

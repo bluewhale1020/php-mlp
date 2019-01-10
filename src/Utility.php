@@ -2,11 +2,12 @@
 namespace Utility;
 
 require 'NeuralNetwork.php';
-//use NeuralNetwork\NeuralNetwork;
+
 use Exception;
 
 class Utility
 {
+
 
     public function showPrediction($prediction,$target){
         $dtable = '<dl>';
@@ -40,7 +41,7 @@ class Utility
             $table .= "<tr>";
             $table .= '<th scope="row">'.$num_row."</th>";
             foreach ($row as $idx => $value) {
-                $table .= "<td>".$value."</td>";
+                $table .= "<td>".sprintf("%.4f",$value)."</td>";
             }
             $table .="</tr>";
         }

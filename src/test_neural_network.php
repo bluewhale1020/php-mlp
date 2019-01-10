@@ -3,7 +3,9 @@ require 'NeuralNetwork.php';
 use NeuralNetwork\NeuralNetwork;
 
 $mlp = new NeuralNetwork(2,3,1,0.01);
-$mlp->train([[0,1],[1,0],[1,1],[0,0]],[1,1,0,0],3000);
+$mlp->train([[0,1],[1,0],[1,1],[0,0]],[1,1,0,0],100,true);
+
+print_r($mlp->getLabels());
 
 $predicted = $mlp->run([[0,1]]);
 //[1]

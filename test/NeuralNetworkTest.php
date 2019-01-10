@@ -43,6 +43,15 @@ class NeuralNetworkTest extends PHPUnit\Framework\TestCase {
 
     $expected = ["a","c","b"];
     $this->assertEquals($expected, $labels);
+
+    $target = [1,1,0,0];
+    $expected = [0,0,1,1];
+   $this->assertEquals($expected, $this->nn->convTargetLabels($target));
+    $labels = $this->nn->getLabels();
+
+    $expected = [1,0];
+    $this->assertEquals($expected, $labels);
+
 }  
 
 public function test_activationFunction() {
@@ -55,7 +64,7 @@ public function test_activationFunctionDer() {
   // h = [[7,-8,9], [-10,11,-12]]; 
 
   $expected = [[1,0,1], [0,1,0]];
- $this->assertEquals($expected, $this->nn->activationFunctionDer($this->h));
+ $this->assertEquals($expected, $this->nn->activationFunctionDer($this->h,null));
 }
 
 
