@@ -9,16 +9,33 @@ class Utility
 {
 
 
-    public function showPrediction($prediction,$target){
+    public function showPrediction($prediction,$target,$isClass = false){
         $dtable = '<dl>';
         foreach ($prediction as $key => $value) {
             if(is_array($value)){ $value = $value[0];}
             $dtable .= '<dt>Actual  [ '.$target[$key].' ]</dt>';
-            $dtable .= '<dd>Predicted:    '.sprintf("%.4f",$value).'</dd>';
+            if($isClass){//クラス分類
+                $dtable .= '<dd>Predicted:    "'.$value.'"</dd>';
+            }else{
+                $dtable .= '<dd>Predicted:    '.sprintf("%.4f",$value).'</dd>';
+            }
+            
         }
         $dtable .= '</dl>';
 
         echo $dtable;
+    }
+
+    public function dispArray($array){
+        $str_array = '[';
+        foreach ($array as $key => $value) {
+            if(is_array($value)){ $value = $value[0];}
+            $str_array .= ' '.$value.' ,';
+        }
+        $str_array = trim($str_array,',');
+        $str_array .= ']';
+
+        echo $str_array;
     }
 
     public function dispMatrix($matrix,$title = "Matrix Table"){

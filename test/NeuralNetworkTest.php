@@ -4,11 +4,13 @@ require 'src/NeuralNetwork.php';
 
 class NeuralNetworkTest extends PHPUnit\Framework\TestCase {
 
-    protected $nn;
+    protected $nn,$reflection;
     protected $a,$b,$c,$vector;
  
     protected function setUp() {
         $this->nn = new NeuralNetwork\NeuralNetwork(2,3,1,0.1);
+        $this->reflection = new \ReflectionClass($this->nn);
+
         $this->a = [[1,2,3], [4,5,6]];
         $this->b = [[7,8,9], [10,11,12]];
         $this->h = [[7,-8,9], [-10,11,-12]];        
@@ -37,43 +39,85 @@ class NeuralNetworkTest extends PHPUnit\Framework\TestCase {
 
   public function test_convTargetLabels() {
     $target = ["a","c","b","a","a","c","b","a","c"];
-    $expected = [0,1,2,0,0,1,2,0,1];
+    $expected = [0,2,1,0,0,2,1,0,2];
    $this->assertEquals($expected, $this->nn->convTargetLabels($target));
     $labels = $this->nn->getLabels();
 
-    $expected = ["a","c","b"];
+    $expected = ["a","b","c"];
     $this->assertEquals($expected, $labels);
+    $output = [0.1];
+    $expected = ["a"];
+    $this->assertEquals($expected, $this->nn->selectLabel($output));    
+    $output = [0.8];
+    $expected = ["b"];
+    $this->assertEquals($expected, $this->nn->selectLabel($output));
+    $output = [2.3];
+    $expected = ["c"];
+    $this->assertEquals($expected, $this->nn->selectLabel($output));
 
     $target = [1,1,0,0];
-    $expected = [0,0,1,1];
+    $expected = [1,1,0,0];
    $this->assertEquals($expected, $this->nn->convTargetLabels($target));
     $labels = $this->nn->getLabels();
 
-    $expected = [1,0];
+    $expected = [0,1];
     $this->assertEquals($expected, $labels);
-
+    $output = [0.1];
+    $expected = [0];
+    $this->assertEquals($expected, $this->nn->selectLabel($output));    
+    $output = [0.8];
+    $expected = [1];
+    $this->assertEquals($expected, $this->nn->selectLabel($output));
 }  
 
-public function test_activationFunction() {
+public function test_reluFunc() {
   // h = [[7,-8,9], [-10,11,-12]]; 
 
+  $method = $this->reflection->getMethod('reluFunc');
+  // アクセス許可
+  $method->setAccessible(true);
+
   $expected = [[7,0,9], [0,11,0]];
- $this->assertEquals($expected, $this->nn->activationFunction($this->h));
+ $this->assertEquals($expected, $method->invoke($this->nn, $this->h));
 }
-public function test_activationFunctionDer() {
+
+public function test_tanhFunc() {
+  $method = $this->reflection->getMethod('tanhFunc');
+  // アクセス許可
+  $method->setAccessible(true);
+
+  $h = [[1,-3,2], [-10,15,-4]]; 
+  $expected = [[0.76159415595576, -0.99505475368673, 0.96402758007582] ,
+ [-0.99999999587769, 0.99999999999981, -0.99932929973907] ];
+ $this->assertEquals($expected, $method->invoke($this->nn, $h));
+}
+
+public function test_reluDer() {
+  $method = $this->reflection->getMethod('reluDer');
+  // アクセス許可
+  $method->setAccessible(true);
   // h = [[7,-8,9], [-10,11,-12]]; 
 
   $expected = [[1,0,1], [0,1,0]];
- $this->assertEquals($expected, $this->nn->activationFunctionDer($this->h,null));
+ $this->assertEquals($expected, $method->invoke($this->nn, $this->h,null));
 }
+public function test_tanhDer() {
+  $method = $this->reflection->getMethod('tanhDer');
+  // アクセス許可
+  $method->setAccessible(true);  
+  $fh = [[0.7,-0.8,0.9], [-0.1,0.2,-0.3]]; 
 
+  $expected = [[0.51,  0.36, 0.19], [  0.99,  0.96,  0.91]];
+  
+ $this->assertEquals($expected, $method->invoke($this->nn, $fh));
+}
 
 
 public function test_train() {
   // h = [[7,-8,9], [-10,11,-12]]; 
   $features = [[0,1],[1,0],[1,1],[0,0]];
   $target = [1,1,0,0];
-  $this->nn->train($features,$target,200);
+  $this->nn->train($features,$target,200,true);
 
   $features = [[0,1]];
   $expected = [[1]];

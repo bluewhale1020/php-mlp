@@ -119,7 +119,8 @@ class NeuralNetwork
             'activation_func'=>$this->active_func_name,
             'rates'=>$rates,
             'point_checker'=>$points_checker,
-            'Execution time'=>$execution_time
+            'Execution time'=>$execution_time,
+            'Labels'=>$this->labels
         ];
 
         return $progressData;
@@ -128,7 +129,7 @@ class NeuralNetwork
     protected function train_network($features,$target,$records){
         $delta_i_h = $this->calc->initDelta($this->weight_i_h);
         $delta_h_o = $this->calc->initDelta($this->weight_h_o);
-        $error_sum = [];
+        $error_sum = null;
         foreach($features as $idx => $row){
             if (!is_array($row[0]) ){
                 $row = array($row);
@@ -152,7 +153,7 @@ class NeuralNetwork
             $error = $this->calc->matrix_sub([[$y_act]],$y_hat);
 
             // for accuracy check
-            if(empty($error_sum)){
+            if(is_null($error_sum)){
                 $error_sum  = $error;
             }else{
                 $error_sum  = $this->calc->matrix_add($error_sum,$error);
@@ -229,6 +230,7 @@ class NeuralNetwork
 
 
             if(!empty($this->labels)){
+                //$result[] =  $y_hat[0];
                 $result[] = $this->selectLabel($y_hat[0]);
             }else{
                 $result[] =  $y_hat[0];
@@ -245,7 +247,7 @@ class NeuralNetwork
         $maxVal=0;
         if(count($output) ==1){//output node が　１
             $l_index = round($output[0]);
-            if(!empty($this->labels[$l_index])){
+            if(isset($this->labels[$l_index])){
                 $result[] = $this->labels[$l_index];
             }else{
                 $result[] =  null;
@@ -253,7 +255,7 @@ class NeuralNetwork
         }else{//複数のoutput node
             $maxs    = array_keys($output, max($output));
             $key_max = $maxs[0]; 
-            if(!empty($this->labels[$key_max])){
+            if(isset($this->labels[$key_max])){
                 $result[] = $this->labels[$key_max];
             }else{
                 $result[] =  null;
@@ -266,7 +268,9 @@ class NeuralNetwork
 
     public function convTargetLabels($target){
         //ラベルとして与えられた教師データ(分類データ)をラベル配列に変換
-        $this->labels = array_unique($target);
+        $temp = array_unique($target);
+        sort($temp);
+        $this->labels = array_values($temp);
 
         //元のデータを番号データとして返す
         $target = array_map(function($x){

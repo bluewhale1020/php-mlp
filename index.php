@@ -9,7 +9,7 @@ use Utility\Utility;
 $input_nodes = 2;
 $hidden_nodes = 3;
 $output_nodes = 1;
-$lr = 0.01;
+$lr = 0.002;
 $active_func_name = 'relu';// tanh , relu
 $mlp = new NeuralNetwork($input_nodes,$hidden_nodes,$output_nodes,$lr,$active_func_name);
 
