@@ -30,7 +30,7 @@ $w_ho_before = $mlp->getWeightHO();
 $features =[[0,1],[1,0],[1,1],[0,0]];
 $target = [1,1,0,0];
 
-$progressData = $mlp->train($features,$target,10000);
+$progressData = $mlp->train($features,$target,30000);
 
 $g_labes = $g_vals = '';
 $graph = $progressData['rates'];
