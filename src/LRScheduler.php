@@ -12,14 +12,20 @@ namespace LRScheduler;
 class LRScheduler
 {
     protected $initial_lr;
+    protected $lr_method;
+    protected $epoches;
 
-    protected $decay;
+    protected $lr_history;
+    protected $loss_history;
 
-    public function __construct($initial_lr = 0.1,$epoches = 2000)
+    public function __construct($lr_method,$initial_lr = 0.1,$epoches = 2000)
     {
+        $this->lr_method = $lr_method;
         $this->initial_lr = $initial_lr;        
-        $this->decay = $initial_lr/$epoches;
+        $this->epoches = $epoches;
     }    
+
+
 
     public function constant(){
         //$lr 固定
@@ -39,8 +45,8 @@ class LRScheduler
     public function timeBaseDecay($epoch){
         //経過に応じて　lr に　低減率を掛ける
         //lr *= (1. / (1. + decay * iterations))
-
-        $lr = $this->initial_lr/(1 + $this->decay * $epoch) ;
+        $decay_rate = $this->initial_lr/$this->epoches;
+        $lr = $this->initial_lr/(1 + $decay_rate * $epoch) ;
 
         return $lr;
     }
@@ -48,10 +54,14 @@ class LRScheduler
     public function exponentialDecay($epoch){
         //経過に応じて　lr に　指数計算した低減率を掛ける
         //lr = lr0 * e^(−kt)
-
-        $lr = $this->initial_lr*(exp(-1 * $this->decay * $epoch)) ;
+        $decay = 0.1;
+        $lr = $this->initial_lr*(exp(-1 *  $decay * $epoch)) ;
 
         return $lr;
     }
+
+
+
+
 
 }

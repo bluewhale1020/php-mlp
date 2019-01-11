@@ -66,7 +66,24 @@ $util = new Utility();
 <br />
 <hr />
 <div class="container">
-
+<div class="row">
+    <div class="col-5 "  style="max-height: 500px;overflow-y:scroll;">
+    <h2 class="">Progress List:</h2>  
+	<ul class="list-group" style="max-width: 400px;">
+<?php
+  $error_lines = array_reverse($progressData['error_lines']);
+  foreach ($error_lines as $key => $line) {
+    echo '<li class="list-group-item">';
+    echo $line;
+    echo "</li>";
+  }
+?>
+	</ul>
+    </div>
+    </div>
+    <br />
+<br />
+<hr />
 <div class="row">
     <div class="col-4 alert alert-info">
 	<ul>

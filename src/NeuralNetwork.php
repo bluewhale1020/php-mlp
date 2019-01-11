@@ -2,7 +2,10 @@
 namespace NeuralNetwork;
 require 'Calc.php';
 use Calc\Calc;
-
+require 'LRScheduler.php';
+use LRScheduler\LRScheduler;
+require 'Analysis.php';
+use Analysis\Analysis;
 
 class NeuralNetwork 
 {
@@ -19,7 +22,7 @@ class NeuralNetwork
     protected $weight_h_o;
 
     protected $calc;
-
+    protected $trainStat;
     // getter
     public function getWeightIH() {
         return $this->weight_i_h;
@@ -80,50 +83,43 @@ class NeuralNetwork
             $this->$labels = null;
         }
 
+        //学習進捗管理
+        $this->trainStat = new Analysis(
+        $this->num_input_nodes,$this->num_hidden_nodes,$this->num_output_nodes,
+        $this->lr,$this->active_func_name,$this->labels,$epoch);
         
         $records = count($features);
 
-        // for progressdata
-        $rates = [];
-        $points_checker = $epoch / 100 * 4;
-        if ($points_checker < 10) $points_checker = 10;
-        ///
-
-        $execution_start_time = microtime(true);
-
+        
+        $this->onTrainStart();
 
         for ($idx=0; $idx < $epoch; $idx++) { 
             
 
             $accuracy = $this->train_network($features,$target,$records);
 
-            if (!($idx % $points_checker) or $idx == ($epoch -1)) {
-                print("#".($idx+1)."回目学習   ");
-                $rates[] =$accuracy;
-                
-                print("学習時誤差:".number_format($accuracy,4)."\n");
-                print("<br />");
-
-            }
+            $this->trainStat->stackLossHistory($idx,$accuracy);
                                     
         }
 
-        $execution_time = round( microtime(true) - $execution_start_time ,2);
+        return $this->onTrainEnd();
 
-        $progressData = [
-            'Epochs'=>$epoch,
-            'Learning rate'=>$this->lr,
-            'Input neurons'=>$this->num_input_nodes,
-            'Hidden neurons'=>$this->num_hidden_nodes,
-            'Output neurons'=>$this->num_output_nodes,
-            'activation_func'=>$this->active_func_name,
-            'rates'=>$rates,
-            'point_checker'=>$points_checker,
-            'Execution time'=>$execution_time,
-            'Labels'=>$this->labels
-        ];
 
-        return $progressData;
+    }
+
+    protected function onTrainStart(){
+        // for progressdata
+        $this->trainStat->initProgressData();
+    }
+    protected function onTrainEnd(){
+
+        $statData = $this->trainStat->completeProgressData();
+
+        return $statData;        
+    }
+    protected function onEpochEnd(){
+
+
     }
 
     protected function train_network($features,$target,$records){

@@ -30,7 +30,7 @@ $w_ho_before = $mlp->getWeightHO();
 $features =[[0,1],[1,0],[1,1],[0,0]];
 $target = [1,1,0,0];
 
-$progressData = $mlp->train($features,$target,30000);
+$progressData = $mlp->train($features,$target,10000);
 
 $g_labes = $g_vals = '';
 $graph = $progressData['rates'];
@@ -61,12 +61,30 @@ $util = new Utility();
 	</style>
 </head>
 <body>
-
 <br />
 <br />
 <hr />
+
 <div class="container">
 
+<div class="row">
+    <div class="col-5 "  style="max-height: 500px;overflow-y:scroll;">
+    <h2 class="">Progress List:</h2>  
+	<ul class="list-group" style="max-width: 400px;">
+<?php
+  $error_lines = array_reverse($progressData['error_lines']);
+  foreach ($error_lines as $key => $line) {
+    echo '<li class="list-group-item">';
+    echo $line;
+    echo "</li>";
+  }
+?>
+	</ul>
+    </div>
+    </div>
+    <br />
+<br />
+<hr />
 <div class="row">
     <div class="col-4 alert alert-info">
 	<ul>
