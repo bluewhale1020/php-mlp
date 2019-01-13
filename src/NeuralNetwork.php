@@ -12,6 +12,7 @@ class NeuralNetwork
     const MODELTYPE = "neuralNetwork";
     protected $active_func_name;
     protected $lr;
+    protected $lrScheduler;
     protected $num_input_nodes;
     protected $num_hidden_nodes;
     protected $num_output_nodes;
@@ -75,7 +76,7 @@ class NeuralNetwork
 
     }
 
-    public function train($features,$target,$epoch = 2000,$labels = false){
+    public function train($features,$target,$epoch = 2000,$labels = false,$lr_method = "constant"){
         //ニューラルネットワークを教師データで学習させる
         if($labels){
             $target = $this->convTargetLabels($target);
@@ -83,10 +84,11 @@ class NeuralNetwork
             $this->$labels = null;
         }
 
+        //LRScheduler
+        $this->lrScheduler = new LRScheduler($lr_method,$this->lr,$epoch);
+
         //学習進捗管理
-        $this->trainStat = new Analysis(
-        $this->num_input_nodes,$this->num_hidden_nodes,$this->num_output_nodes,
-        $this->lr,$this->active_func_name,$this->labels,$epoch);
+        $this->trainStat = new Analysis($epoch);
         
         $records = count($features);
 
@@ -98,8 +100,9 @@ class NeuralNetwork
 
             $accuracy = $this->train_network($features,$target,$records);
 
-            $this->trainStat->stackLossHistory($idx,$accuracy);
-                                    
+            $this->trainStat->stackLossHistory($idx,$accuracy,$this->lr);
+                           
+            $this->onEpochEnd($idx);
         }
 
         return $this->onTrainEnd();
@@ -110,16 +113,21 @@ class NeuralNetwork
     protected function onTrainStart(){
         // for progressdata
         $this->trainStat->initProgressData();
+        $this->lr = $this->lrScheduler->getLr(0);
     }
+
+    protected function onEpochEnd($idx){
+        $this->lr = $this->lrScheduler->getLr($idx);
+
+    }
+
     protected function onTrainEnd(){
 
-        $statData = $this->trainStat->completeProgressData();
+        $statData = $this->trainStat->getProgressData(
+            $this->num_input_nodes,$this->num_hidden_nodes,$this->num_output_nodes,
+            $this->lr,$this->active_func_name,$this->labels,$this->lrScheduler->lr_method);
 
         return $statData;        
-    }
-    protected function onEpochEnd(){
-
-
     }
 
     protected function train_network($features,$target,$records){

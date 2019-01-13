@@ -9,7 +9,7 @@ use Utility\Utility;
 $input_nodes = 2;
 $hidden_nodes = 3;
 $output_nodes = 1;
-$lr = 0.002;
+$lr = 0.03;
 $active_func_name = 'relu';// tanh , relu
 $mlp = new NeuralNetwork($input_nodes,$hidden_nodes,$output_nodes,$lr,$active_func_name);
 
@@ -29,18 +29,29 @@ $w_ho_before = $mlp->getWeightHO();
 // ];
 $features =[[0,1],[1,0],[1,1],[0,0]];
 $target = [1,1,0,0];
+//学習率の低減方法 lr_method
+//'constant''stepDecay' 'timeBaseDecay' 'exponentialDecay'
 
-$progressData = $mlp->train($features,$target,10000);
+$progressData = $mlp->train($features,$target,10000,false,"stepDecay");
 
-$g_labes = $g_vals = '';
+$g_labes = $g_vals = $g_lrs = '';
 $graph = $progressData['rates'];
 $points_checker = $progressData['point_checker'];
-foreach($graph as $num => $val) {
+foreach($graph as $num => $data) {
     $g_labes .= ($num*$points_checker) . ',';
-    $g_vals .= (round( $val, 2)) . ',';
+
+    list($idx,$accuracy,$lr) = explode(":",$data);
+
+    $msg = "#".($idx+1)."回目学習   ";
+    $msg .="学習時誤差:".number_format($accuracy,4);
+    $error_lines[] = $msg;
+    $g_vals .= (round( $accuracy, 2)) . ',';
+
+    $g_lrs .= $lr . ',';
 }
 $g_labes = trim($g_labes, ',');
 $g_vals = trim($g_vals, ',');
+$g_lrs = trim($g_lrs, ',');
 
 
 $util = new Utility();
@@ -72,7 +83,7 @@ $util = new Utility();
     <h2 class="">Progress List:</h2>  
 	<ul class="list-group" style="max-width: 400px;">
 <?php
-  $error_lines = array_reverse($progressData['error_lines']);
+  $error_lines = array_reverse($error_lines);
   foreach ($error_lines as $key => $line) {
     echo '<li class="list-group-item">';
     echo $line;
@@ -91,7 +102,7 @@ $util = new Utility();
 	<li>Input neurons: <?= $progressData['Input neurons'] ?></li>
 	<li>Hidden neurons: <?= $progressData['Hidden neurons'] ?></li>
 	<li>Output neurons: <?= $progressData['Output neurons'] ?></li>
-	<li>Learning rate: <?= $progressData['Learning rate'] ?></li>
+	<li>Learning rate: <?= number_format($progressData['Learning rate'],10) ?></li>
 	<li>Epochs: <?= $progressData['Epochs'] ?></li>
 	<li>Execution time: <?= $progressData['Execution time'] ?> sec</li>
 	</ul>
@@ -101,6 +112,35 @@ $util = new Utility();
 
 <div class="chart" style="width:600px; margin:20px auto;">
 	<canvas height="200" id="lineChart" style="height:400px; margin:20px auto;"></canvas>
+    </div>
+	</div>
+
+
+</div>
+
+<br />
+<br />
+<hr />
+<div class="row">
+    <div class="col-4 alert alert-info" style="overflow-y:scroll;">
+
+	<ul class="">
+  <?php
+    $lrsArray = explode(",",$g_lrs);
+    foreach ($lrsArray as $g_lr) {
+      echo '<li>';
+      echo number_format($g_lr,10);
+      echo "</li>";
+    } 
+  ?>
+    </ul>
+
+    </div>
+    <div class="col-8">
+	<h2 class="text-center">Learning Rate History: <?= ucwords($progressData['lr_method']) ?></h2>
+
+<div class="chart" style="width:600px; margin:20px auto;">
+	<canvas height="200" id="lineChart2" style="height:400px; margin:20px auto;"></canvas>
     </div>
 	</div>
 
@@ -155,6 +195,21 @@ echo "<br />";
           ]
         };
 
+        var areaChartData2 = {
+          labels: [<?= $g_labes ?>],
+          datasets: [
+            {
+              fillColor: "rgba(60,141,188,0.9)",
+              strokeColor: "rgba(60,141,188,0.8)",
+              pointColor: "#3b8bba",
+              pointStrokeColor: "rgba(60,141,188,1)",
+              pointHighlightFill: "#fff",
+              pointHighlightStroke: "rgba(60,141,188,1)",
+              data: [<?= $g_lrs ?>],
+            }
+          ]
+        };
+
         var areaChartOptions = {
            showScale: true,
            scaleShowGridLines: true,
@@ -180,6 +235,10 @@ echo "<br />";
 	    var lineChartOptions = areaChartOptions;
 	    lineChartOptions.datasetFill = false;
 	    lineChart.Line(areaChartData, lineChartOptions);
+
+	    var lineChartCanvas2 = $("#lineChart2").get(0).getContext("2d");
+	    var lineChart2 = new Chart(lineChartCanvas2);
+	    lineChart2.Line(areaChartData2, lineChartOptions);      
   });
 
 </script>

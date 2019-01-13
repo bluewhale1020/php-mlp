@@ -30,14 +30,20 @@ $w_ho_before = $mlp->getWeightHO();
 $features =[[0,1],[1,0],[1,1],[0,0]];
 $target = [1,1,0,0];
 
-$progressData = $mlp->train($features,$target,10000,true);
+$progressData = $mlp->train($features,$target,20000,true);
 
 $g_labes = $g_vals = '';
 $graph = $progressData['rates'];
 $points_checker = $progressData['point_checker'];
-foreach($graph as $num => $val) {
-    $g_labes .= ($num*$points_checker) . ',';
-    $g_vals .= (round( $val, 2)) . ',';
+foreach($graph as $num => $data) {
+  $g_labes .= ($num*$points_checker) . ',';
+
+  list($idx,$accuracy) = explode(":",$data);
+
+  $msg = "#".($idx+1)."回目学習   ";
+  $msg .="学習時誤差:".number_format($accuracy,4);
+  $error_lines[] = $msg;
+  $g_vals .= (round( $accuracy, 2)) . ',';
 }
 $g_labes = trim($g_labes, ',');
 $g_vals = trim($g_vals, ',');
@@ -71,7 +77,7 @@ $util = new Utility();
     <h2 class="">Progress List:</h2>  
 	<ul class="list-group" style="max-width: 400px;">
 <?php
-  $error_lines = array_reverse($progressData['error_lines']);
+  $error_lines = array_reverse($error_lines);
   foreach ($error_lines as $key => $line) {
     echo '<li class="list-group-item">';
     echo $line;
