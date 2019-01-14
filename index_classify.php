@@ -9,9 +9,9 @@ use Utility\Utility;
 $input_nodes = 2;
 $hidden_nodes = 3;
 $output_nodes = 1;
-$lr = 0.002;
+$lr = 0.03;
 $active_func_name = 'relu';// tanh , relu
-$mlp = new NeuralNetwork($input_nodes,$hidden_nodes,$output_nodes,$lr,$active_func_name);
+$mlp = new NeuralNetwork($input_nodes,$hidden_nodes,$output_nodes,$lr,$active_func_name,true);
 
 $w_ih_before = $mlp->getWeightIH();
 $w_ho_before = $mlp->getWeightHO();
@@ -29,24 +29,27 @@ $w_ho_before = $mlp->getWeightHO();
 // ];
 $features =[[0,1],[1,0],[1,1],[0,0]];
 $target = [1,1,0,0];
+$labels = true;
+$progressData = $mlp->train($features,$target,3000,$labels,"stepDecay");
 
-$progressData = $mlp->train($features,$target,20000,true);
-
-$g_labes = $g_vals = '';
+$g_labes = $g_vals = $g_lrs = '';
 $graph = $progressData['rates'];
 $points_checker = $progressData['point_checker'];
 foreach($graph as $num => $data) {
-  $g_labes .= ($num*$points_checker) . ',';
+    $g_labes .= ($num*$points_checker) . ',';
 
-  list($idx,$accuracy) = explode(":",$data);
+    list($idx,$accuracy,$lr) = explode(":",$data);
 
-  $msg = "#".($idx+1)."回目学習   ";
-  $msg .="学習時誤差:".number_format($accuracy,4);
-  $error_lines[] = $msg;
-  $g_vals .= (round( $accuracy, 2)) . ',';
+    $msg = "#".($idx+1)."回目学習   ";
+    $msg .="学習時誤差:".number_format($accuracy,4);
+    $error_lines[] = $msg;
+    $g_vals .= (round( $accuracy, 2)) . ',';
+
+    $g_lrs .= $lr . ',';
 }
 $g_labes = trim($g_labes, ',');
 $g_vals = trim($g_vals, ',');
+$g_lrs = trim($g_lrs, ',');
 
 
 $util = new Utility();
@@ -96,15 +99,18 @@ $util = new Utility();
 	<li>Input neurons: <?= $progressData['Input neurons'] ?></li>
 	<li>Hidden neurons: <?= $progressData['Hidden neurons'] ?></li>
 	<li>Output neurons: <?= $progressData['Output neurons'] ?></li>
-	<li>Learning rate: <?= $progressData['Learning rate'] ?></li>
+	<li>Learning rate: <?= number_format($progressData['Learning rate'],10) ?></li>
 	<li>Epochs: <?= $progressData['Epochs'] ?></li>
 	<li>Execution time: <?= $progressData['Execution time'] ?> sec</li>
-  <li>Labels: <?= $util->dispArray($progressData['Labels']) ?></li>
+  <li>Labels: <?php
+  if($labels){
+    $util->dispArray($progressData['Labels']);
+  }  ?></li>
 
 	</ul>
     </div>
     <div class="col-8">
-	<h2 class="text-center">Activation function: <?= ucwords($progressData['activation_func']) ?></h2>
+	<h2 class="text-center">Loss History: <?= ucwords($progressData['activation_func']) ?></h2>
 
 <div class="chart" style="width:600px; margin:20px auto;">
 	<canvas height="200" id="lineChart" style="height:400px; margin:20px auto;"></canvas>
@@ -113,6 +119,36 @@ $util = new Utility();
 
 
 </div>
+
+<br />
+<br />
+<hr />
+<div class="row">
+    <div class="col-4 alert alert-info" style="overflow-y:scroll;">
+
+	<ul class="">
+  <?php
+    $lrsArray = explode(",",$g_lrs);
+    foreach ($lrsArray as $g_lr) {
+      echo '<li>';
+      echo number_format($g_lr,10);
+      echo "</li>";
+    } 
+  ?>
+    </ul>
+
+    </div>
+    <div class="col-8">
+	<h2 class="text-center">Learning Rate History: <?= ucwords($progressData['lr_method']) ?></h2>
+
+<div class="chart" style="width:600px; margin:20px auto;">
+	<canvas height="200" id="lineChart2" style="height:400px; margin:20px auto;"></canvas>
+    </div>
+	</div>
+
+
+</div>
+
 
 <br />
 
@@ -162,6 +198,21 @@ echo "<br />";
           ]
         };
 
+        var areaChartData2 = {
+          labels: [<?= $g_labes ?>],
+          datasets: [
+            {
+              fillColor: "rgba(60,141,188,0.9)",
+              strokeColor: "rgba(60,141,188,0.8)",
+              pointColor: "#3b8bba",
+              pointStrokeColor: "rgba(60,141,188,1)",
+              pointHighlightFill: "#fff",
+              pointHighlightStroke: "rgba(60,141,188,1)",
+              data: [<?= $g_lrs ?>],
+            }
+          ]
+        };
+
         var areaChartOptions = {
            showScale: true,
            scaleShowGridLines: true,
@@ -182,11 +233,15 @@ echo "<br />";
            responsive: true,
          };
 	
-	    var lineChartCanvas = $("#lineChart").get(0).getContext("2d");
+         var lineChartCanvas = $("#lineChart").get(0).getContext("2d");
 	    var lineChart = new Chart(lineChartCanvas);
 	    var lineChartOptions = areaChartOptions;
 	    lineChartOptions.datasetFill = false;
 	    lineChart.Line(areaChartData, lineChartOptions);
+
+	    var lineChartCanvas2 = $("#lineChart2").get(0).getContext("2d");
+	    var lineChart2 = new Chart(lineChartCanvas2);
+	    lineChart2.Line(areaChartData2, lineChartOptions); 
   });
 
 </script>

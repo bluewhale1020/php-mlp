@@ -11,10 +11,12 @@ $hidden_nodes = 3;
 $output_nodes = 1;
 $lr = 0.03;
 $active_func_name = 'relu';// tanh , relu
-$mlp = new NeuralNetwork($input_nodes,$hidden_nodes,$output_nodes,$lr,$active_func_name);
+$mlp = new NeuralNetwork($input_nodes,$hidden_nodes,$output_nodes,$lr,$active_func_name,true);
 
 $w_ih_before = $mlp->getWeightIH();
 $w_ho_before = $mlp->getWeightHO();
+
+
 
 // $progressData = [
   // 'Epochs'=>$epoch,
@@ -32,7 +34,7 @@ $target = [1,1,0,0];
 //学習率の低減方法 lr_method
 //'constant''stepDecay' 'timeBaseDecay' 'exponentialDecay'
 
-$progressData = $mlp->train($features,$target,10000,false,"stepDecay");
+$progressData = $mlp->train($features,$target,3000,true,"stepDecay");
 
 $g_labes = $g_vals = $g_lrs = '';
 $graph = $progressData['rates'];
@@ -52,7 +54,6 @@ foreach($graph as $num => $data) {
 $g_labes = trim($g_labes, ',');
 $g_vals = trim($g_vals, ',');
 $g_lrs = trim($g_lrs, ',');
-
 
 $util = new Utility();
 
@@ -108,7 +109,7 @@ $util = new Utility();
 	</ul>
     </div>
     <div class="col-8">
-	<h2 class="text-center">Activation function: <?= ucwords($progressData['activation_func']) ?></h2>
+	<h2 class="text-center">Loss History: <?= ucwords($progressData['activation_func']) ?></h2>
 
 <div class="chart" style="width:600px; margin:20px auto;">
 	<canvas height="200" id="lineChart" style="height:400px; margin:20px auto;"></canvas>

@@ -109,10 +109,14 @@ class Calc
         return $newmatrix;
     }
  
-    public function initWeight($cols,$rows,$active_func_name='relu'){
+    public function initWeight($cols,$rows,$active_func_name='relu',$bias){
         //列数$cols 行数$rowsの行列を作成 データは適当な平均、偏差のランダム数
         $weightArray = [];
         
+        if($bias){
+            $rows += 1;
+        }
+
         //input_nodeと活性化関数から平均、偏差計算
         list($mean,$std) = $this->getMeanStd($rows,$active_func_name);
         for ($i=0; $i < $rows; $i++) { 

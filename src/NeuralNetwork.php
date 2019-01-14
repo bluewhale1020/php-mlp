@@ -16,6 +16,7 @@ class NeuralNetwork
     protected $num_input_nodes;
     protected $num_hidden_nodes;
     protected $num_output_nodes;
+    protected $bias;
 
     protected $labels;
 
@@ -57,26 +58,28 @@ class NeuralNetwork
         $this->labels = $labels;
     }
 
-    public function __construct($num_input_nodes,$num_hidden_nodes,$num_output_nodes,$lr=0.01,$active_func_name = 'relu')
+    public function __construct($num_input_nodes,$num_hidden_nodes,$num_output_nodes,$lr=0.01,
+    $active_func_name = 'relu',$bias = false)
     {
-        //ニューラルネットワークの初期化　（インプットノード数、隠れノード数、出力ノード数、学習率、活性化関数名[relu tanh]）
+        //ニューラルネットワークの初期化　（インプットノード数、隠れノード数、出力ノード数、学習率、活性化関数名[relu tanh]、バイアスノードの有無）
         $this->calc = new Calc();
         $this->lr = $lr;
         $this->num_input_nodes = $num_input_nodes;
         $this->num_hidden_nodes = $num_hidden_nodes;
         $this->num_output_nodes = $num_output_nodes;
         $this->active_func_name = $active_func_name;
-
+        $this->bias = $bias;
         //weight配列を作成
-        $this->weight_i_h = $this->calc->initWeight($this->num_hidden_nodes,$this->num_input_nodes,$active_func_name);
-        $this->weight_h_o = $this->calc->initWeight($this->num_output_nodes,$this->num_hidden_nodes,$active_func_name);
+        $this->weight_i_h = $this->calc->initWeight($this->num_hidden_nodes,$this->num_input_nodes,$active_func_name,$this->bias);
+        $this->weight_h_o = $this->calc->initWeight($this->num_output_nodes,$this->num_hidden_nodes,$active_func_name,$this->bias);
         
         //
 
 
     }
 
-    public function train($features,$target,$epoch = 2000,$labels = false,$lr_method = "constant"){
+    public function train($features,$target,$epoch = 2000,$labels = false,
+    $lr_method = "constant"){
         //ニューラルネットワークを教師データで学習させる
         if($labels){
             $target = $this->convTargetLabels($target);
@@ -119,6 +122,7 @@ class NeuralNetwork
     protected function onEpochEnd($idx){
         $this->lr = $this->lrScheduler->getLr($idx);
 
+
     }
 
     protected function onTrainEnd(){
@@ -138,14 +142,19 @@ class NeuralNetwork
             if (!is_array($row[0]) ){
                 $row = array($row);
             }
-    
+            
+            if($this->bias){//インプットデータにバイアスノード = 1 を追加
+                $row[0][] = 1;
+            }
 
             //h = W.X + b
             $hidden_input = $this->calc->dot($row,$this->weight_i_h);
             //y = f(h)
             $hidden_output = $this->activationFunction($hidden_input);
 
-            
+            if($this->bias){//hidden_outputデータにバイアスノード = 1 を追加
+                $hidden_output[0][] = 1;
+            }            
             //h = W.X + b
             $final_input = $this->calc->dot($hidden_output,$this->weight_h_o);
             //signals from final output layer
@@ -165,26 +174,38 @@ class NeuralNetwork
             /////
 
             $y_error_term = $error;
+            
 
             $hidden_error = $this->calc->dot($error,$this->weight_h_o,true);
 
             //hidden_error_term = hidden_error * self.activationFunctionDer(hidden_outputs)
             $h_error_term =$this->calc->matrix_multiply($hidden_error , $this->activationFunctionDer($hidden_input,$hidden_output)); 
-            
+
             //print("h_error_term + row:");
             //print_r($h_error_term);print_r($row);
             $temp = $this->calc->matrix_multiply($h_error_term,$row,true); 
+
+
+            if($this->bias){//余分なエレメントを削除
+                $temp = $this->cutExtraElement($temp);
+            }  
+
             $delta_i_h = $this->calc->matrix_add($temp,$delta_i_h);
+            $temp = $this->calc->matrix_multiply($this->lr , $delta_i_h);
+            $this->weight_i_h = $this->calc->matrix_add($temp,$this->weight_i_h);
+
             
             $temp = $this->calc->matrix_multiply($y_error_term,$hidden_output,true); 
             $delta_h_o = $this->calc->matrix_add($temp,$delta_h_o);
+            $temp = $this->calc->matrix_multiply($this->lr , $delta_h_o) ;
+            $this->weight_h_o = $this->calc->matrix_add($temp,$this->weight_h_o);
 
         }
 
-        $temp = $this->calc->matrix_divide($this->calc->matrix_multiply($this->lr , $delta_h_o) , $records);
-        $this->weight_h_o = $this->calc->matrix_add($temp,$this->weight_h_o);
-        $temp = $this->calc->matrix_divide($this->calc->matrix_multiply($this->lr , $delta_i_h) , $records);
-        $this->weight_i_h = $this->calc->matrix_add($temp,$this->weight_i_h);
+        // $temp = $this->calc->matrix_divide($this->calc->matrix_multiply($this->lr , $delta_h_o) , $records);
+        // $this->weight_h_o = $this->calc->matrix_add($temp,$this->weight_h_o);
+        // $temp = $this->calc->matrix_divide($this->calc->matrix_multiply($this->lr , $delta_i_h) , $records);
+        // $this->weight_i_h = $this->calc->matrix_add($temp,$this->weight_i_h);
 
 
         //for accuracy check
@@ -192,6 +213,14 @@ class NeuralNetwork
         $accuracy = $this->MSE(($temp));
 
         return $accuracy;
+    }
+
+    protected function cutExtraElement($matrix){
+
+        foreach ($matrix as $key => $row) {
+            array_pop($matrix[$key]);
+        }
+        return $matrix;
     }
 
     protected function MSE($error){
@@ -219,13 +248,21 @@ class NeuralNetwork
         foreach($features as $idx => $row){
             if (!is_array($row[0]) ){
                 $row = array($row);
-            }       
+            }    
+            
+            if($this->bias){//インプットデータにバイアスノード = 1 を追加
+                $row[0][] = 1;
+            }            
             //h = W.X + b
             $hidden_input = $this->calc->dot($row,$this->weight_i_h);
             //y = f(h)
             $hidden_output = $this->activationFunction($hidden_input);
 
             //print_r($hidden_input);
+            if($this->bias){//hidden_outputデータにバイアスノード = 1 を追加
+                $hidden_output[0][] = 1;
+            }
+
             //h = W.X + b
             $final_input = $this->calc->dot($hidden_output,$this->weight_h_o);
             $y_hat =$final_input;
@@ -338,6 +375,10 @@ class NeuralNetwork
             return ($value > 0)? 1:0;
 
         }]);
+
+        if($this->bias){//バイアスノードの分、要素を追加
+            $y_hat[0][] = 1;
+        }
 
         return $y_hat;
     }
