@@ -27,14 +27,14 @@ class Calc
         }        
         return $this->calcMatrix->multiply($matrix1,$matrix2);
     }
-    public function matrix_multiply($variable,$matrix,$newaxis = false){
+    public function matrix_multiply($variable,$matrix,$newaxis = false,$cut_col = false){
         //行列の要素の積を返す
         if(is_array($variable)){
-            if($newaxis){
+            if($newaxis){//足りない要素を追加
                 $rows = $this->calcMatrix->countRow($variable);
                 $rows2 = $this->calcMatrix->countRow($matrix);  
                 if($rows != $rows2){
-                    throw new Exception("二つの行列の列数が異なります。", 1);
+                    throw new Exception("二つの行列の行数が異なります。", 1);
                     
                 }             
                 $columns = $this->calcMatrix->countCol($variable);
@@ -45,8 +45,23 @@ class Calc
                     $variable = $this->expandRows($variable,$rows2);                   
                 }
                 
+            }elseif($cut_col){//余る列をカット
+                $rows = $this->calcMatrix->countRow($variable);
+                $rows2 = $this->calcMatrix->countRow($matrix);  
+                if($rows != $rows2){
+                    throw new Exception("二つの行列の行数が異なります。", 1);
+                    
+                }
+                $columns = $this->calcMatrix->countCol($matrix);
+                $columns2 = $this->calcMatrix->countCol($variable);
+                if($columns < $columns2){
+                    $variable = $this->cutColumns($variable,$columns);
+                }elseif($columns > $columns2){
+                    $matrix = $this->cutColumns($matrix,$columns2);
+                }                
+
             }
-            //print_r($variable);print_r($matrix);
+            
             return $this->calcMatrix->elem_multiply($variable,$matrix); 
 
         }else{
@@ -77,6 +92,27 @@ class Calc
             }           
 
         return $newmatrix;
+    }
+
+    public function cutColumns($matrix,$num_column){
+
+        if(!is_array($matrix[0])){// [3,9,2];
+            array_pop($matrix);
+        }else{
+            // [[3,9,2]];
+            foreach($matrix as $key=>$row) {
+                foreach ($row as $idx => $value) {
+                    if($idx > ($num_column-1)){
+                        unset($matrix[$key][$idx]);
+                    }
+                    
+                }
+                
+             }        
+
+
+        }
+        return $matrix;
     }
 
     public function expandColumns($matrix,$num_column){
@@ -158,7 +194,11 @@ class Calc
             case 'tanh'://std * sqrt(1/n) 
                 $std = sqrt(1/$base);
     
-                    break;                
+                    break;  
+            case 'sigmoid'://std * sqrt(1/n) 
+                $std = sqrt(1/$base);
+
+                break;                                  
             default://mean 0, std base^-5
                 $std = pow($base,-5);
                 break;

@@ -177,20 +177,22 @@ class NeuralNetwork
             
 
             $hidden_error = $this->calc->dot($error,$this->weight_h_o,true);
-
+            //print("hidden_error + hidden_input:");
+            //print_r($hidden_error);print_r($hidden_input);print("<br>");
             //hidden_error_term = hidden_error * self.activationFunctionDer(hidden_outputs)
             $h_error_term =$this->calc->matrix_multiply($hidden_error , $this->activationFunctionDer($hidden_input,$hidden_output)); 
-
+            //print_r($h_error_term);
+            // die();
             //print("h_error_term + row:");
             //print_r($h_error_term);print_r($row);
             $temp = $this->calc->matrix_multiply($h_error_term,$row,true); 
-
-
-            if($this->bias){//余分なエレメントを削除
+            // print_r($temp);
+            // print_r($delta_i_h);
+            if($this->bias and $this->calc->calcMatrix->countCol($temp) !=$this->calc->calcMatrix->countCol($delta_i_h)){//余分なエレメントを削除
                 $temp = $this->cutExtraElement($temp);
             }  
-
-            $delta_i_h = $this->calc->matrix_add($temp,$delta_i_h);
+            
+            $delta_i_h = $this->calc->matrix_add($temp,$delta_i_h);//die();
             $temp = $this->calc->matrix_multiply($this->lr , $delta_i_h);
             $this->weight_i_h = $this->calc->matrix_add($temp,$this->weight_i_h);
 
@@ -328,7 +330,10 @@ class NeuralNetwork
                 break;
             case 'tanh':
                 return $this->tanhFunc($h);
-                break;            
+                break;  
+                case 'sigmoid':
+                return $this->sigmoidFunc($h);
+                break;                           
             default:
                 return $this->reluFunc($h);
                 break;
@@ -354,6 +359,15 @@ class NeuralNetwork
         return $y_hat;
     }
 
+    protected function sigmoidFunc($h){
+        //sigmoid function
+        $y_hat = filter_var($h, FILTER_CALLBACK, ['options' => function ($value) {
+            return 1 / (1 + exp(-$value));
+        }]);
+
+        return $y_hat;
+    }    
+
     public function activationFunctionDer($h,$fh){//$hidden_input,$hidden_output
         switch ($this->active_func_name) {
             case 'relu':
@@ -361,7 +375,10 @@ class NeuralNetwork
                 break;
             case 'tanh':
                 return $this->tanhDer($fh);
-                break;            
+                break;
+                case 'sigmoid':
+                return $this->sigmoidDer($fh);
+                break;                            
             default:
                 return $this->reluDer($h);
                 break;
@@ -370,15 +387,17 @@ class NeuralNetwork
     }
 
     protected function reluDer($h){
+
+        if($this->bias){
+            $h[0][] = 1;
+        }
+
         //relu der function
         $y_hat = filter_var($h, FILTER_CALLBACK, ['options' => function ($value) {
             return ($value > 0)? 1:0;
 
         }]);
 
-        if($this->bias){//バイアスノードの分、要素を追加
-            $y_hat[0][] = 1;
-        }
 
         return $y_hat;
     }
@@ -391,7 +410,15 @@ class NeuralNetwork
 
         return $y_hat;
     }
+    protected function sigmoidDer($fh){
+        //sigmoid der function
+        // fh' = fh(1 - fh)
+        $y_hat = filter_var($fh, FILTER_CALLBACK, ['options' => function ($value) {
+            return $value*(1 - $value);
+        }]);
 
+        return $y_hat;
+    }
 
 
 

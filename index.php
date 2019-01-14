@@ -10,7 +10,7 @@ $input_nodes = 2;
 $hidden_nodes = 3;
 $output_nodes = 1;
 $lr = 0.03;
-$active_func_name = 'relu';// tanh , relu
+$active_func_name = 'relu';// tanh , relu , sigmoid
 $mlp = new NeuralNetwork($input_nodes,$hidden_nodes,$output_nodes,$lr,$active_func_name,true);
 
 $w_ih_before = $mlp->getWeightIH();
