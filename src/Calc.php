@@ -79,6 +79,17 @@ class Calc
         return $this->calcMatrix->add($matrix1,$matrix2);
     }
 
+    protected function matrix_abs($matrix){
+        return filter_var($matrix, FILTER_CALLBACK, ['options' => function ($value) {
+            return abs($value);
+        }]);        
+    }
+
+    public function matrix_abs_add($matrix1,$matrix2){
+        //行列の絶対値の要素の和を返す
+        return $this->calcMatrix->add($this->matrix_abs($matrix1),$this->matrix_abs($matrix2));
+    }
+
     public function matrix_sub($matrix1,$matrix2){
         //行列の要素の差を返す
         return $this->calcMatrix->sub($matrix1,$matrix2);
@@ -179,6 +190,19 @@ class Calc
         return $deltaArray;
 
     }   
+
+    public function resetDelta($deltaArray){
+        //$deltaArrayの要素を全て０にする
+        list($rows,$cols) = $this->calcMatrix->countSize($deltaArray);
+
+        for ($i=0; $i < $rows; $i++) { 
+            for ($j=0; $j < $cols; $j++) { 
+                $deltaArray[$i][$j] = 0;
+            }
+        }
+        return $deltaArray;
+
+    }
 
     public function getMeanStd($base,$active_func_name){
         //baseと活性化関数から平均、偏差計算

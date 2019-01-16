@@ -6,12 +6,21 @@ require './src/Utility.php';
 use NeuralNetwork\NeuralNetwork;
 use Utility\Utility;
 
+//<< xor 問題 >>
+//tanhの最適設定
+// layer:2-3-1
+// lr:0.2 
+//sigmoidの最適設定
+// layer:2-3-1
+// lr:0.2 
+
+
 $input_nodes = 2;
 $hidden_nodes = 3;
 $output_nodes = 1;
-$lr = 0.03;
+$lr = 0.2;
 $active_func_name = 'relu';// tanh , relu , sigmoid
-$mlp = new NeuralNetwork($input_nodes,$hidden_nodes,$output_nodes,$lr,$active_func_name,true);
+$mlp = new NeuralNetwork($input_nodes,$hidden_nodes,$output_nodes,$lr,$active_func_name,false);
 
 $w_ih_before = $mlp->getWeightIH();
 $w_ho_before = $mlp->getWeightHO();
@@ -34,7 +43,7 @@ $target = [1,1,0,0];
 //学習率の低減方法 lr_method
 //'constant''stepDecay' 'timeBaseDecay' 'exponentialDecay'
 
-$progressData = $mlp->train($features,$target,3000,true,"stepDecay");
+$progressData = $mlp->train($features,$target,3000,false,"stepDecay");
 
 $g_labes = $g_vals = $g_lrs = '';
 $graph = $progressData['rates'];

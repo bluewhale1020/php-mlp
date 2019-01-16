@@ -106,6 +106,8 @@ class NeuralNetwork
             $this->trainStat->stackLossHistory($idx,$accuracy,$this->lr);
                            
             $this->onEpochEnd($idx);
+
+            if($accuracy == 0){break;}
         }
 
         return $this->onTrainEnd();
@@ -169,7 +171,7 @@ class NeuralNetwork
             if(is_null($error_sum)){
                 $error_sum  = $error;
             }else{
-                $error_sum  = $this->calc->matrix_add($error_sum,$error);
+                $error_sum  = $this->calc->matrix_abs_add($error_sum,$error);
             }
             /////
 
@@ -183,10 +185,11 @@ class NeuralNetwork
             $h_error_term =$this->calc->matrix_multiply($hidden_error , $this->activationFunctionDer($hidden_input,$hidden_output)); 
             //print_r($h_error_term);
             // die();
-            //print("h_error_term + row:");
-            //print_r($h_error_term);print_r($row);
+            // print("h_error_term + row:");print("<br>");
+            // print_r($h_error_term);print_r($row);print("<br>");
+
             $temp = $this->calc->matrix_multiply($h_error_term,$row,true); 
-            // print_r($temp);
+            //print_r($temp);print("<br>");
             // print_r($delta_i_h);
             if($this->bias and $this->calc->calcMatrix->countCol($temp) !=$this->calc->calcMatrix->countCol($delta_i_h)){//余分なエレメントを削除
                 $temp = $this->cutExtraElement($temp);
@@ -201,6 +204,10 @@ class NeuralNetwork
             $delta_h_o = $this->calc->matrix_add($temp,$delta_h_o);
             $temp = $this->calc->matrix_multiply($this->lr , $delta_h_o) ;
             $this->weight_h_o = $this->calc->matrix_add($temp,$this->weight_h_o);
+            //die();
+            //デルタ配列のリセット
+            $delta_i_h = $this->calc->resetDelta($delta_i_h);
+            $delta_h_o = $this->calc->resetDelta($delta_h_o);            
 
         }
 
@@ -331,7 +338,7 @@ class NeuralNetwork
             case 'tanh':
                 return $this->tanhFunc($h);
                 break;  
-                case 'sigmoid':
+            case 'sigmoid':
                 return $this->sigmoidFunc($h);
                 break;                           
             default:
@@ -376,7 +383,7 @@ class NeuralNetwork
             case 'tanh':
                 return $this->tanhDer($fh);
                 break;
-                case 'sigmoid':
+            case 'sigmoid':
                 return $this->sigmoidDer($fh);
                 break;                            
             default:
@@ -414,7 +421,7 @@ class NeuralNetwork
         //sigmoid der function
         // fh' = fh(1 - fh)
         $y_hat = filter_var($fh, FILTER_CALLBACK, ['options' => function ($value) {
-            return $value*(1 - $value);
+            return $value*(1.0 - $value);
         }]);
 
         return $y_hat;

@@ -60,7 +60,7 @@ class LRScheduler
     public function stepDecay($epoch){
         //epochs_dropずつ lr　を0.5倍する
         $drop = 0.5;
-        $epochs_drop = 1000;
+        $epochs_drop = 500;
         
         $lr = $this->initial_lr * pow($drop,floor(((1+$epoch)/$epochs_drop)));
 
