@@ -19,8 +19,9 @@ $input_nodes = 2;
 $hidden_nodes = 3;
 $output_nodes = 1;
 $lr = 0.2;
-$active_func_name = 'relu';// tanh , relu , sigmoid
-$mlp = new NeuralNetwork($input_nodes,$hidden_nodes,$output_nodes,$lr,$active_func_name,false);
+$active_func_name = 'sigmoid';// tanh , relu , sigmoid
+$mlp = new NeuralNetwork($input_nodes,$hidden_nodes,$output_nodes,$lr,
+$active_func_name,false,0.5);
 
 $w_ih_before = $mlp->getWeightIH();
 $w_ho_before = $mlp->getWeightHO();
@@ -43,7 +44,7 @@ $target = [1,1,0,0];
 //学習率の低減方法 lr_method
 //'constant''stepDecay' 'timeBaseDecay' 'exponentialDecay'
 
-$progressData = $mlp->train($features,$target,3000,false,"stepDecay");
+$progressData = $mlp->train($features,$target,1000,false,"stepDecay");
 
 $g_labes = $g_vals = $g_lrs = '';
 $graph = $progressData['rates'];

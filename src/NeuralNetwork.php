@@ -17,6 +17,7 @@ class NeuralNetwork
     protected $num_hidden_nodes;
     protected $num_output_nodes;
     protected $bias;
+    protected $momentum;
 
     protected $labels;
 
@@ -59,9 +60,10 @@ class NeuralNetwork
     }
 
     public function __construct($num_input_nodes,$num_hidden_nodes,$num_output_nodes,$lr=0.01,
-    $active_func_name = 'relu',$bias = false)
+    $active_func_name = 'relu',$bias = false,$momentum = 0)
     {
-        //ニューラルネットワークの初期化　（インプットノード数、隠れノード数、出力ノード数、学習率、活性化関数名[relu tanh]、バイアスノードの有無）
+        //ニューラルネットワークの初期化　（インプットノード数、隠れノード数、出力ノード数、学習率、活性化関数名[relu tanh]、
+        //バイアスノードの有無、モーメンタムファクター）
         $this->calc = new Calc();
         $this->lr = $lr;
         $this->num_input_nodes = $num_input_nodes;
@@ -69,6 +71,7 @@ class NeuralNetwork
         $this->num_output_nodes = $num_output_nodes;
         $this->active_func_name = $active_func_name;
         $this->bias = $bias;
+        $this->momentum = $momentum;
         //weight配列を作成
         $this->weight_i_h = $this->calc->initWeight($this->num_hidden_nodes,$this->num_input_nodes,$active_func_name,$this->bias);
         $this->weight_h_o = $this->calc->initWeight($this->num_output_nodes,$this->num_hidden_nodes,$active_func_name,$this->bias);
@@ -107,7 +110,10 @@ class NeuralNetwork
                            
             $this->onEpochEnd($idx);
 
-            if($accuracy == 0){break;}
+            if($accuracy < 0.00001){
+                $this->trainStat->setEpoch($idx+1);
+                break;
+            }
         }
 
         return $this->onTrainEnd();
@@ -137,8 +143,13 @@ class NeuralNetwork
     }
 
     protected function train_network($features,$target,$records){
+        //デルタ配列初期化      
         $delta_i_h = $this->calc->initDelta($this->weight_i_h);
         $delta_h_o = $this->calc->initDelta($this->weight_h_o);
+        //前回のデルタ配列（モーメンタム用）        
+        $prev_i_h = $delta_i_h;
+        $prev_h_o = $delta_h_o;
+
         $error_sum = null;
         foreach($features as $idx => $row){
             if (!is_array($row[0]) ){
@@ -148,7 +159,7 @@ class NeuralNetwork
             if($this->bias){//インプットデータにバイアスノード = 1 を追加
                 $row[0][] = 1;
             }
-
+            
             //h = W.X + b
             $hidden_input = $this->calc->dot($row,$this->weight_i_h);
             //y = f(h)
@@ -195,16 +206,22 @@ class NeuralNetwork
                 $temp = $this->cutExtraElement($temp);
             }  
             
-            $delta_i_h = $this->calc->matrix_add($temp,$delta_i_h);//die();
+            $delta_i_h = $this->calc->matrix_add($temp,$delta_i_h);
             $temp = $this->calc->matrix_multiply($this->lr , $delta_i_h);
             $this->weight_i_h = $this->calc->matrix_add($temp,$this->weight_i_h);
+            //モーメンタム追加
+            $this->weight_i_h = $this->calc->matrix_add($this->calc->matrix_multiply($this->momentum, $prev_i_h),$this->weight_i_h);
 
-            
             $temp = $this->calc->matrix_multiply($y_error_term,$hidden_output,true); 
             $delta_h_o = $this->calc->matrix_add($temp,$delta_h_o);
             $temp = $this->calc->matrix_multiply($this->lr , $delta_h_o) ;
             $this->weight_h_o = $this->calc->matrix_add($temp,$this->weight_h_o);
-            //die();
+            //モーメンタム追加
+           $this->weight_h_o = $this->calc->matrix_add($this->calc->matrix_multiply($this->momentum, $prev_h_o),$this->weight_h_o);
+
+            //前回のデルタ配列（モーメンタム用）
+            $prev_i_h = $delta_i_h;
+            $prev_h_o = $delta_h_o;
             //デルタ配列のリセット
             $delta_i_h = $this->calc->resetDelta($delta_i_h);
             $delta_h_o = $this->calc->resetDelta($delta_h_o);            

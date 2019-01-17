@@ -20,6 +20,11 @@ class Analysis
 
     protected $rates;
 
+    // setter
+    public function setEpoch($epoch) {
+        $this->epoch = $epoch;
+    }
+
 
     public function __construct($epoch)
     {
