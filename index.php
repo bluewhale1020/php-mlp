@@ -10,18 +10,23 @@ use Utility\Utility;
 //tanhの最適設定
 // layer:2-3-1
 // lr:0.2 
+// momentum:0.3  0.4以上でweightの値が発散するリスク
 //sigmoidの最適設定
 // layer:2-3-1
 // lr:0.2 
-
+// momentum:0.5
+//reluの最適設定
+// layer:2-3-1
+// lr:0.05 
+// momentum:0.2
 
 $input_nodes = 2;
 $hidden_nodes = 3;
 $output_nodes = 1;
-$lr = 0.2;
-$active_func_name = 'sigmoid';// tanh , relu , sigmoid
+$lr = 0.05 ;
+$active_func_name = 'relu';// tanh , relu , sigmoid
 $mlp = new NeuralNetwork($input_nodes,$hidden_nodes,$output_nodes,$lr,
-$active_func_name,false,0.5);
+$active_func_name,true,0.2);
 
 $w_ih_before = $mlp->getWeightIH();
 $w_ho_before = $mlp->getWeightHO();
@@ -44,7 +49,7 @@ $target = [1,1,0,0];
 //学習率の低減方法 lr_method
 //'constant''stepDecay' 'timeBaseDecay' 'exponentialDecay'
 
-$progressData = $mlp->train($features,$target,1000,false,"stepDecay");
+$progressData = $mlp->train($features,$target,30000,false,"exponentialDecay");
 
 $g_labes = $g_vals = $g_lrs = '';
 $graph = $progressData['rates'];

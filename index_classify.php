@@ -6,12 +6,27 @@ require './src/Utility.php';
 use NeuralNetwork\NeuralNetwork;
 use Utility\Utility;
 
+//<< xor 問題 >>
+//tanhの最適設定
+// layer:2-3-1
+// lr:0.2 
+// momentum:0.3  0.4以上でweightの値が発散するリスク
+//sigmoidの最適設定
+// layer:2-3-1
+// lr:0.2 
+// momentum:0.5
+//reluの最適設定
+// layer:2-3-1
+// lr:0.05 
+// momentum:0.2
+
 $input_nodes = 2;
 $hidden_nodes = 3;
 $output_nodes = 1;
-$lr = 0.03;
-$active_func_name = 'relu';// tanh , relu
-$mlp = new NeuralNetwork($input_nodes,$hidden_nodes,$output_nodes,$lr,$active_func_name,true);
+$lr = 0.2 ;
+$active_func_name = 'tanh';// tanh , relu , sigmoid
+$mlp = new NeuralNetwork($input_nodes,$hidden_nodes,$output_nodes,$lr,
+$active_func_name,true,0.5);
 
 $w_ih_before = $mlp->getWeightIH();
 $w_ho_before = $mlp->getWeightHO();

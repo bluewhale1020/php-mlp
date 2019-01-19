@@ -156,13 +156,10 @@ class Calc
         return $newmatrix;
     }
  
-    public function initWeight($cols,$rows,$active_func_name='relu',$bias){
+    public function initWeight($cols,$rows,$active_func_name='relu'){
         //列数$cols 行数$rowsの行列を作成 データは適当な平均、偏差のランダム数
         $weightArray = [];
         
-        if($bias){
-            $rows += 1;
-        }
 
         //input_nodeと活性化関数から平均、偏差計算
         list($mean,$std) = $this->getMeanStd($rows,$active_func_name);
@@ -176,6 +173,20 @@ class Calc
         }
         return $weightArray;       
     }
+
+    public function initBias($cols,$rows = 1,$init_bias = 1){
+        //列数$cols 行数$rowsの行列を作成 データは適当な平均、偏差のランダム数
+        $biasArray = [];
+
+        for ($i=0; $i < $rows; $i++) { 
+            $biasArray[$i] = null;
+            for ($j=0; $j < $cols; $j++) { 
+                $biasArray[$i][$j] = $init_bias;
+            }
+        }
+        return $biasArray;       
+    }
+
     public function initDelta($weightArray){
         //$weightArrayと同型で、要素０の行列を返す
         list($rows,$cols) = $this->calcMatrix->countSize($weightArray);
