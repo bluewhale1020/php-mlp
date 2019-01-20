@@ -6,6 +6,9 @@ require 'LRScheduler.php';
 use LRScheduler\LRScheduler;
 require 'Analysis.php';
 use Analysis\Analysis;
+require 'TrainTestSplit.php';
+use CrossValidation\TrainTestSplit;
+
 
 class NeuralNetwork 
 {
@@ -29,6 +32,7 @@ class NeuralNetwork
 
     protected $calc;
     protected $trainStat;
+    protected $split;
     // getter
     public function getWeightIH() {
         return $this->weight_i_h;
@@ -68,6 +72,7 @@ class NeuralNetwork
         //ニューラルネットワークの初期化　（インプットノード数、隠れノード数、出力ノード数、学習率、活性化関数名[relu tanh]、
         //バイアスノードの有無、モーメンタムファクター）
         $this->calc = new Calc();
+        $this->split = new TrainTestSplit();        
         $this->lr = $lr;
         $this->num_input_nodes = $num_input_nodes;
         $this->num_hidden_nodes = $num_hidden_nodes;
@@ -89,11 +94,11 @@ class NeuralNetwork
 
     }
 
-    public function train($features,$target,$epoch = 2000,$labels = false,
-    $lr_method = "constant"){
+    public function train($dataset,$epoch = 2000,$labels = false,$lr_method = "constant"){
         //ニューラルネットワークを教師データで学習させる
         if($labels){
-            $target = $this->convTargetLabels($target);
+            $target = $this->convTargetLabels($dataset->getTargets());
+            $dataset->setTargets($target);
         }else{
             $this->$labels = null;
         }
@@ -104,14 +109,14 @@ class NeuralNetwork
         //学習進捗管理
         $this->trainStat = new Analysis($epoch);
         
-        $records = count($features);
+        $records = count($dataset->getFeatures());
 
         
         $this->onTrainStart();
 
         for ($idx=0; $idx < $epoch; $idx++) { 
             
-            //list($features,$target) = $this->onEpochStart($features,$target);
+            list($features,$target) = $this->onEpochStart($dataset);
 
             $accuracy = $this->train_network($features,$target,$records);
 
@@ -135,9 +140,10 @@ class NeuralNetwork
         $this->trainStat->initProgressData();
         $this->lr = $this->lrScheduler->getLr(0);
     }
-    protected function onEpochStart($features,$target){
-
-
+    protected function onEpochStart($dataset){
+        //学習データの順序をシャッフルする
+        $result = $this->split->run($dataset,0);
+        return $result["train"];
 
     }
     protected function onEpochEnd($idx){
@@ -189,7 +195,7 @@ class NeuralNetwork
             
             //signals from final output layer
             $y_hat = $final_input;
-            //$y_hat = $this->activationFunction($final_input);
+            $y_hat = $this->activationFunction($final_input);
 
             $y_act = $target[$idx];
 
@@ -202,26 +208,14 @@ class NeuralNetwork
                 $error_sum  = $this->calc->matrix_abs_add($error_sum,$error);
             }
             /////
-
-            $y_error_term = $error;
+            $y_error_term =$this->calc->matrix_multiply($error , $this->activationFunctionDer($final_input,$y_hat)); 
+            //$y_error_term = $error;
             
 
             $hidden_error = $this->calc->dot($error,$this->weight_h_o,true);
-            //print("hidden_error + hidden_input:");
-            //print_r($hidden_error);print_r($hidden_input);print("<br>");
-            //hidden_error_term = hidden_error * self.activationFunctionDer(hidden_outputs)
             $h_error_term =$this->calc->matrix_multiply($hidden_error , $this->activationFunctionDer($hidden_input,$hidden_output)); 
-            //print_r($h_error_term);
-            // die();
-            // print("h_error_term + row:");print("<br>");
-            // print_r($h_error_term);print_r($row);print("<br>");
 
             $temp = $this->calc->matrix_multiply($h_error_term,$row,true); 
-            //print_r($temp);print("<br>");
-            // print_r($delta_i_h);
-            // if($this->bias and $this->calc->calcMatrix->countCol($temp) !=$this->calc->calcMatrix->countCol($delta_i_h)){//余分なエレメントを削除
-            //     $temp = $this->cutExtraElement($temp);
-            // }  
 
             $delta_i_h = $this->calc->matrix_add($temp,$delta_i_h);
             $temp = $this->calc->matrix_multiply($this->lr , $delta_i_h);
@@ -322,8 +316,8 @@ class NeuralNetwork
             }            
             
             //signals from final output layer
-            $y_hat = $final_input;
-            //$y_hat = $this->activationFunction($final_input);
+            //$y_hat = $final_input;
+            $y_hat = $this->activationFunction($final_input);
 
 
             if(!empty($this->labels)){

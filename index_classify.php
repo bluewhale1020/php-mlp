@@ -5,7 +5,8 @@ error_reporting(E_ALL | E_STRICT);
 require './src/Utility.php';
 use NeuralNetwork\NeuralNetwork;
 use Utility\Utility;
-
+require './src/DatasetManager.php';
+use Dataset\DatasetManager;
 //<< xor 問題 >>
 //tanhの最適設定
 // layer:2-3-1
@@ -23,7 +24,7 @@ use Utility\Utility;
 $input_nodes = 2;
 $hidden_nodes = 3;
 $output_nodes = 1;
-$lr = 0.2 ;
+$lr = 0.2;
 $active_func_name = 'tanh';// tanh , relu , sigmoid
 $mlp = new NeuralNetwork($input_nodes,$hidden_nodes,$output_nodes,$lr,
 $active_func_name,true,0.5);
@@ -44,8 +45,14 @@ $w_ho_before = $mlp->getWeightHO();
 // ];
 $features =[[0,1],[1,0],[1,1],[0,0]];
 $target = [1,1,0,0];
+
+$dataset = new DatasetManager();
+
+$dataset->setFeatures($features);
+$dataset->setTargets($target);
+
 $labels = true;
-$progressData = $mlp->train($features,$target,3000,$labels,"stepDecay");
+$progressData = $mlp->train($dataset,3000,$labels,"stepDecay");
 
 $g_labes = $g_vals = $g_lrs = '';
 $graph = $progressData['rates'];

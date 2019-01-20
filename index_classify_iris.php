@@ -3,38 +3,29 @@ ini_set('display_errors', 'On');
 error_reporting(E_ALL | E_STRICT);
 
 require './src/Utility.php';
+require './src/DatasetManager.php';
+// require 'src/TrainTestSplit.php';
 use NeuralNetwork\NeuralNetwork;
 use Utility\Utility;
-
-require './src/DatasetManager.php';
 use Dataset\DatasetManager;
-
-//<< xor 問題 >>
-//tanhの最適設定
-// layer:2-3-1
-// lr:0.2 
-// momentum:0.3  0.4以上でweightの値が発散するリスク
-//sigmoidの最適設定
-// layer:2-3-1
-// lr:0.2 
-// momentum:0.5
-//reluの最適設定
-// layer:2-3-1
-// lr:0.05 
+use CrossValidation\TrainTestSplit;
+//<< iris 問題 >>
+//reluの設定
+// layer:4-9-1
+// lr:0.02 
 // momentum:0.2
+// lr_method:exponentialDecay
 
-$input_nodes = 2;
-$hidden_nodes = 3;
+$input_nodes = 4;
+$hidden_nodes = 9;
 $output_nodes = 1;
-$lr = 0.05 ;
+$lr = 0.02;
 $active_func_name = 'relu';// tanh , relu , sigmoid
 $mlp = new NeuralNetwork($input_nodes,$hidden_nodes,$output_nodes,$lr,
 $active_func_name,true,0.2);
 
 $w_ih_before = $mlp->getWeightIH();
 $w_ho_before = $mlp->getWeightHO();
-
-
 
 // $progressData = [
   // 'Epochs'=>$epoch,
@@ -47,18 +38,24 @@ $w_ho_before = $mlp->getWeightHO();
   // 'point_checker'=>$points_checker,
   // 'Execution time'=>$execution_time
 // ];
-$features =[[0,1],[1,0],[1,1],[0,0]];
-$target = [1,1,0,0];
+$path = "./dataset/iris.csv";
 
-$dataset = new DatasetManager();
+$dataset = new DatasetManager($path,true);
 
-$dataset->setFeatures($features);
-$dataset->setTargets($target);
+$split = new TrainTestSplit();
+
+$result = $split->run($dataset);
+$train = $result["train"];
+$test = $result["test"];
+//  list($train,$test)
+$dataset->setFeatures($train[0]);
+$dataset->setTargets($train[1]);
 
 //学習率の低減方法 lr_method
 //'constant''stepDecay' 'timeBaseDecay' 'exponentialDecay'
 
-$progressData = $mlp->train($dataset,3000,false,"exponentialDecay");
+$labels = true;
+$progressData = $mlp->train($dataset,200,$labels,"exponentialDecay");
 
 $g_labes = $g_vals = $g_lrs = '';
 $graph = $progressData['rates'];
@@ -79,6 +76,7 @@ $g_labes = trim($g_labes, ',');
 $g_vals = trim($g_vals, ',');
 $g_lrs = trim($g_lrs, ',');
 
+
 $util = new Utility();
 
 ?>
@@ -97,12 +95,11 @@ $util = new Utility();
 	</style>
 </head>
 <body>
+
 <br />
 <br />
 <hr />
-
 <div class="container">
-
 <div class="row">
     <div class="col-5 "  style="max-height: 500px;overflow-y:scroll;">
     <h2 class="">Progress List:</h2>  
@@ -130,6 +127,11 @@ $util = new Utility();
 	<li>Learning rate: <?= number_format($progressData['Learning rate'],10) ?></li>
 	<li>Epochs: <?= $progressData['Epochs'] ?></li>
 	<li>Execution time: <?= $progressData['Execution time'] ?> sec</li>
+  <li>Labels: <?php
+  if($labels){
+    $util->dispArray($progressData['Labels']);
+  }  ?></li>
+
 	</ul>
     </div>
     <div class="col-8">
@@ -172,13 +174,14 @@ $util = new Utility();
 
 </div>
 
+
 <br />
 
 <?php
 	echo '<hr /><h1>Prediction:</h1>';
-	$prediction = $mlp->run($features);
+	$prediction = $mlp->run($test[0]);
 
-	$util->showPrediction($prediction,$target);
+	$util->showPrediction($prediction,$test[1],true);
 
 echo '<hr /><h1>Before</h1>';
 
@@ -255,7 +258,7 @@ echo "<br />";
            responsive: true,
          };
 	
-	    var lineChartCanvas = $("#lineChart").get(0).getContext("2d");
+         var lineChartCanvas = $("#lineChart").get(0).getContext("2d");
 	    var lineChart = new Chart(lineChartCanvas);
 	    var lineChartOptions = areaChartOptions;
 	    lineChartOptions.datasetFill = false;
@@ -263,7 +266,7 @@ echo "<br />";
 
 	    var lineChartCanvas2 = $("#lineChart2").get(0).getContext("2d");
 	    var lineChart2 = new Chart(lineChartCanvas2);
-	    lineChart2.Line(areaChartData2, lineChartOptions);      
+	    lineChart2.Line(areaChartData2, lineChartOptions); 
   });
 
 </script>
