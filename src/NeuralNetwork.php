@@ -97,8 +97,8 @@ class NeuralNetwork
     public function train($dataset,$epoch = 2000,$labels = false,$lr_method = "constant"){
         //ニューラルネットワークを教師データで学習させる
         if($labels){
-            $target = $this->convTargetLabels($dataset->getTargets());
-            $dataset->setTargets($target);
+            $target = $this->convTargetLabels($dataset->getTrainTargets());
+            $dataset->setTrainTargets($target);
         }else{
             $this->$labels = null;
         }
@@ -109,7 +109,7 @@ class NeuralNetwork
         //学習進捗管理
         $this->trainStat = new Analysis($epoch);
         
-        $records = count($dataset->getFeatures());
+        $records = count($dataset->getTrainFeatures());
 
         
         $this->onTrainStart();
@@ -118,13 +118,13 @@ class NeuralNetwork
             
             list($features,$target) = $this->onEpochStart($dataset);
 
-            $accuracy = $this->train_network($features,$target,$records);
+            $train_loss = $this->train_network($features,$target,$records);
+                          
+            $validation_loss = $this->onEpochEnd($idx,$dataset);
 
-            $this->trainStat->stackLossHistory($idx,$accuracy,$this->lr);
-                           
-            $this->onEpochEnd($idx);
+            $this->trainStat->stackLossHistory($idx,$train_loss,$validation_loss,$this->lr);
 
-            if($accuracy < 0.00001){
+            if($train_loss < 0.00001 or $train_loss > 1000){
                 $this->trainStat->setEpoch($idx+1);
                 break;
             }
@@ -142,12 +142,41 @@ class NeuralNetwork
     }
     protected function onEpochStart($dataset){
         //学習データの順序をシャッフルする
-        $result = $this->split->run($dataset,0);
-        return $result["train"];
+        $result = $this->split->randomize_train_data($dataset);
+        return $result;
 
     }
-    protected function onEpochEnd($idx){
+    protected function onEpochEnd($idx,$dataset){
         $this->lr = $this->lrScheduler->getLr($idx);
+
+        $predicted = $this->run($dataset->getTestFeatures());
+
+        $score = $this->validate($predicted,$dataset->getTestTargets());
+        return $score;
+
+    }
+
+    public function validate($predicted,$targets){
+
+        $predicted = array_merge(...$predicted);
+        
+        $error = [];
+        if($this->labels){
+            foreach ($targets as $idx => $correct) {
+                if($correct == $predicted[$idx]){
+                    $error[] = 0;
+                }else{
+                    $error[] = 1;
+                }
+            }
+        }else{
+
+            $error = $this->calc->matrix_sub($targets,$predicted);
+        }
+        // $records = count($predicted);
+        $validation_loss = $this->MSE($error);//エラー行列の各要素を二乗し、平均値を求める
+
+        return $validation_loss;
 
 
     }
@@ -169,13 +198,13 @@ class NeuralNetwork
         $prev_i_h = $delta_i_h;
         $prev_h_o = $delta_h_o;
 
-        $error_sum = null;
+        $error_sum = [];
         foreach($features as $idx => $row){
             if (!is_array($row[0]) ){
                 $row = array($row);
             }
             
-            
+         
             //h = W.X + b
             if($this->bias){
                 $hidden_input = $this->calc->matrix_add($this->calc->dot($row,$this->weight_i_h),$this->bias_i_h);
@@ -202,11 +231,11 @@ class NeuralNetwork
             $error = $this->calc->matrix_sub([[$y_act]],$y_hat);
 
             // for accuracy check
-            if(is_null($error_sum)){
-                $error_sum  = $error;
-            }else{
-                $error_sum  = $this->calc->matrix_abs_add($error_sum,$error);
-            }
+            //if(is_null($error_sum)){
+                $error_sum[]  = $error;
+            // }else{
+            //     $error_sum  = $this->calc->matrix_abs_add($error_sum,$error);
+            // }
             /////
             $y_error_term =$this->calc->matrix_multiply($error , $this->activationFunctionDer($final_input,$y_hat)); 
             //$y_error_term = $error;
@@ -254,10 +283,9 @@ class NeuralNetwork
         // $temp = $this->calc->matrix_divide($this->calc->matrix_multiply($this->lr , $delta_i_h) , $records);
         // $this->weight_i_h = $this->calc->matrix_add($temp,$this->weight_i_h);
 
-
         //for accuracy check
-        $temp =$this->calc->matrix_divide($error_sum , $records);
-        $accuracy = $this->MSE(($temp));
+        //$temp =$this->calc->matrix_divide($error_sum , $records);
+        $accuracy = $this->MSE($error_sum);
 
         return $accuracy;
     }
@@ -271,7 +299,7 @@ class NeuralNetwork
     }
 
     protected function MSE($error){
-        //エラー行列の各要素を二乗し、平均で割る
+        //エラー行列の各要素を二乗し、平均値を求める
         $serror = [];
         $total =0;
         array_walk_recursive($error, function ($value) use (&$serror) {
@@ -392,7 +420,7 @@ class NeuralNetwork
     protected function reluFunc($h){
         //leaky relu function
         $y_hat = filter_var($h, FILTER_CALLBACK, ['options' => function ($value) {
-            return max(0.002*$value,$value);
+            return min(max(0.002*$value,$value), 6);
         }]);
 
         return $y_hat;

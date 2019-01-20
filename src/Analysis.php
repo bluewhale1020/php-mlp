@@ -20,6 +20,7 @@ class Analysis
 
     protected $rates;
 
+    protected $val_rates;
     // setter
     public function setEpoch($epoch) {
         $this->epoch = $epoch;
@@ -36,15 +37,19 @@ class Analysis
 //学習進捗データの作成
     public function initProgressData(){
         $this->rates = [];
+        $this->val_rates = [];        
         $this->points_checker = $this->epoch / 100 * 4;
         if ($this->points_checker < 10) $this->points_checker = 10;
 
         $this->startTimer();
     }
 
-    public function stackLossHistory($idx,$accuracy,$lr){
+    public function stackLossHistory($idx,$train_loss,$val_loss,$lr){
         if (!($idx % $this->points_checker) or $idx == ($this->epoch -1)) {
-            $this->rates[] =($idx).":".$accuracy.":".$lr;
+            $this->rates[] =($idx).":".$train_loss.":".$lr;
+
+            $this->val_rates[] =$val_loss;
+            
             
         }        
 
@@ -61,6 +66,7 @@ class Analysis
             'Output neurons'=>$num_output_nodes,
             'activation_func'=>$active_func_name,
             'rates'=>$this->rates,
+            'val_rates'=>$this->val_rates,            
             'point_checker'=>$this->points_checker,
             'Execution time'=>$this->exe_time,
             'Labels'=>$labels,

@@ -8,7 +8,35 @@ use Dataset\DatasetManager;
 class TrainTestSplit
 {
 
-    public function __construct(){
+    public function randomize_train_data($dataset,$random_state = null){
+
+        $trainFeatures=[];
+        $trainTargets=[];
+
+
+        $this->seeder($random_state);        
+
+        $features = $dataset->getTrainFeatures();
+        $targets = $dataset->getTrainTargets();
+        $feature_size = count($features);
+        
+        $random_order=[];
+        
+        //ランダムな順序を配列に入れる
+        for($i=0; $i<$feature_size; $i++){
+            array_push($random_order, $i);
+        }
+        shuffle($random_order);
+
+        foreach ($random_order as $key => $idx) {
+            
+            $trainFeatures[] = $features[$idx];
+            $trainTargets[] = $targets[$idx];                
+  
+
+        }
+
+        return [$trainFeatures,$trainTargets];
 
 
     }
@@ -49,6 +77,12 @@ class TrainTestSplit
             }
 
         }
+
+        $dataset->setTestFeatures($testFeatures);
+        $dataset->setTestTargets($testTargets);
+        $dataset->setTrainFeatures($trainFeatures);
+        $dataset->setTrainTargets($trainTargets);
+        $dataset->clearFeaturesTargets();
 
         return ["train"=>[$trainFeatures,$trainTargets],"test"=>[$testFeatures,$testTargets] ];
 

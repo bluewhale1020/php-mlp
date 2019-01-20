@@ -42,7 +42,7 @@ public function countSize(array $a){
 public function add(array $a, array $b){
 
     if(!is_array($a[0]) and !is_array($b[0])){
-        if(count($a) !== $this->count($b)){
+        if(count($a) !== count($b)){
             throw new \Exception('Different Matrix size.');
         } 
         foreach($a as $idx=>$val){
@@ -72,7 +72,7 @@ public function add(array $a, array $b){
 public function sub(array $a, array $b){
 
     if(!is_array($a[0]) and !is_array($b[0])){
-        if(count($a) !== $this->count($b)){
+        if(count($a) !== count($b)){
             throw new \Exception('Different Matrix size.');
         } 
         foreach($a as $idx=>$val){

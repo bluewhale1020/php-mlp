@@ -52,16 +52,22 @@ $target = [1,1,0,0];
 
 $dataset = new DatasetManager();
 
-$dataset->setFeatures($features);
-$dataset->setTargets($target);
+$dataset->setTestFeatures($features);
+$dataset->setTestTargets($target);
+$dataset->setTrainFeatures($features);
+$dataset->setTrainTargets($target);
+
+// $dataset->setFeatures($features);
+// $dataset->setTargets($target);
 
 //学習率の低減方法 lr_method
 //'constant''stepDecay' 'timeBaseDecay' 'exponentialDecay'
 
 $progressData = $mlp->train($dataset,3000,false,"exponentialDecay");
 
-$g_labes = $g_vals = $g_lrs = '';
+$g_labes = $g_vals = $g_val_vals = $g_lrs = '';
 $graph = $progressData['rates'];
+$val_graph = $progressData['val_rates'];
 $points_checker = $progressData['point_checker'];
 foreach($graph as $num => $data) {
     $g_labes .= ($num*$points_checker) . ',';
@@ -75,8 +81,13 @@ foreach($graph as $num => $data) {
 
     $g_lrs .= $lr . ',';
 }
+foreach ($val_graph as $key => $value) {
+  $g_val_vals .= (round( $value, 2)) . ',';
+}
+
 $g_labes = trim($g_labes, ',');
 $g_vals = trim($g_vals, ',');
+$g_val_vals = trim($g_val_vals, ',');
 $g_lrs = trim($g_lrs, ',');
 
 $util = new Utility();
@@ -173,13 +184,36 @@ $util = new Utility();
 </div>
 
 <br />
+<br />
+<hr />
+<div class="row">
+    <div class="col-4 alert alert-info" style="overflow-y:scroll;">
+
+    <?php
+	echo '<hr /><h1>Prediction:</h1>';
+	$prediction = $mlp->run($dataset->getTestFeatures());
+  $score = $mlp->validate($prediction,$dataset->getTestTargets());
+  
+  echo "<h3 class=\"text-primary \">Score:". number_format((1-$score) * 100,2)." %</h3>";
+	$util->showPrediction($prediction,$dataset->getTestTargets(),true);
+?>
+
+    </div>
+    <div class="col-8">
+	<h2 class="text-center">Validation Loss History: <?= ucwords($progressData['activation_func']) ?></h2>
+
+<div class="chart" style="width:600px; margin:20px auto;">
+	<canvas height="200" id="lineChart3" style="height:400px; margin:20px auto;"></canvas>
+    </div>
+	</div>
+
+
+</div>
+
+
+
 
 <?php
-	echo '<hr /><h1>Prediction:</h1>';
-	$prediction = $mlp->run($features);
-
-	$util->showPrediction($prediction,$target);
-
 echo '<hr /><h1>Before</h1>';
 
 $util->dispMatrix( $w_ih_before,"Weight_Input_Hidden");
@@ -254,6 +288,21 @@ echo "<br />";
            maintainAspectRatio: false,
            responsive: true,
          };
+
+         var areaChartData3 = {
+          labels: [<?= $g_labes ?>],
+          datasets: [
+            {
+              fillColor: "rgba(255,140,0,0.9)",
+              strokeColor: "rgba(255,140,0,0.8)",
+              pointColor: "#FF8C00",
+              pointStrokeColor: "rgba(255,140,0,1)",
+              pointHighlightFill: "#fff",
+              pointHighlightStroke: "rgba(255,140,0,1)",
+              data: [<?= $g_val_vals ?>],
+            }
+          ]
+        };         
 	
 	    var lineChartCanvas = $("#lineChart").get(0).getContext("2d");
 	    var lineChart = new Chart(lineChartCanvas);
@@ -263,7 +312,11 @@ echo "<br />";
 
 	    var lineChartCanvas2 = $("#lineChart2").get(0).getContext("2d");
 	    var lineChart2 = new Chart(lineChartCanvas2);
-	    lineChart2.Line(areaChartData2, lineChartOptions);      
+	    lineChart2.Line(areaChartData2, lineChartOptions);    
+
+	    var lineChartCanvas3 = $("#lineChart3").get(0).getContext("2d");
+	    var lineChart3 = new Chart(lineChartCanvas3);
+	    lineChart3.Line(areaChartData3, lineChartOptions);         
   });
 
 </script>

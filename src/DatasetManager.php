@@ -11,7 +11,10 @@ class DatasetManager
 
     protected $features;
     protected $targets;
-
+    protected $testFeatures;
+    protected $testTargets;
+    protected $trainFeatures;
+    protected $trainTargets;    
 
     public function __construct($path = null,$header = false)
     {
@@ -62,9 +65,39 @@ class DatasetManager
         return $this->targets;
     }
     public function setFeatures($features){
-        return $this->features = $features;
+        $this->features = $features;
     }
     public function setTargets($targets){
-        return $this->targets = $targets;
+        $this->targets = $targets;
     }
+
+    public function getTestFeatures(){
+        return $this->testFeatures;
+    }
+    public function getTestTargets(){
+        return $this->testTargets;
+    }
+    public function setTestFeatures($features){
+        $this->testFeatures = $features;
+    }
+    public function setTestTargets($targets){
+        $this->testTargets = $targets;
+    }  
+    
+    public function getTrainFeatures(){
+        return $this->trainFeatures;
+    }
+    public function getTrainTargets(){
+        return $this->trainTargets;
+    }
+    public function setTrainFeatures($features){
+        $this->trainFeatures = $features;
+    }
+    public function setTrainTargets($targets){
+        $this->trainTargets = $targets;
+    }
+    public function clearFeaturesTargets(){
+        $this->features = [];
+        $this->targets = [];
+    }     
 }
