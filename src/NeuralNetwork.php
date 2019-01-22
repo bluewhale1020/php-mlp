@@ -203,8 +203,7 @@ class NeuralNetwork
             if (!is_array($row[0]) ){
                 $row = array($row);
             }
-            
-         
+
             //h = W.X + b
             if($this->bias){
                 $hidden_input = $this->calc->matrix_add($this->calc->dot($row,$this->weight_i_h),$this->bias_i_h);
@@ -244,29 +243,44 @@ class NeuralNetwork
             $hidden_error = $this->calc->dot($error,$this->weight_h_o,true);
             $h_error_term =$this->calc->matrix_multiply($hidden_error , $this->activationFunctionDer($hidden_input,$hidden_output)); 
 
-            $temp = $this->calc->matrix_multiply($h_error_term,$row,true); 
-
-            $delta_i_h = $this->calc->matrix_add($temp,$delta_i_h);
-            $temp = $this->calc->matrix_multiply($this->lr , $delta_i_h);
-            $this->weight_i_h = $this->calc->matrix_add($temp,$this->weight_i_h);
-            //モーメンタム追加
-            $this->weight_i_h = $this->calc->matrix_add($this->calc->matrix_multiply($this->momentum, $prev_i_h),$this->weight_i_h);
+            $delta_i_h = $this->calc->matrix_multiply($h_error_term,$row,true); 
+            $grad = $this->calc->matrix_multiply($this->lr , $delta_i_h);
+            //モーメンタム追加 Nesterov Momentum
+            $v_i_h = $this->calc->matrix_add($this->calc->matrix_multiply($this->momentum, $prev_i_h),$grad);
+            //v_nesterov = v + mu * (v - v_prev)   keep going, extrapolate
+            $v_nest = $this->calc->matrix_add($v_i_h,$this->calc->matrix_multiply($this->momentum, $this->calc->matrix_sub($v_i_h,$prev_i_h)));
+            $this->weight_i_h = $this->calc->matrix_add($v_nest,$this->weight_i_h);
 
             if($this->bias){//Bhバイアス配列の調整
-                $temp = $this->calc->matrix_multiply($this->lr , $h_error_term) ;
-                $this->bias_i_h = $this->calc->matrix_add($temp,$this->bias_i_h);            
+                $grad = $this->calc->matrix_multiply($this->lr , $h_error_term) ;
+                //モーメンタム追加 Nesterov Momentum
+                if(!empty($prev_b_i_h)){
+                    $v_i_h = $this->calc->matrix_add($this->calc->matrix_multiply($this->momentum, $prev_b_i_h),$grad);
+                    $v_nest = $this->calc->matrix_add($v_i_h,$this->calc->matrix_multiply($this->momentum, $this->calc->matrix_sub($v_i_h,$prev_b_i_h)));
+                    $this->bias_i_h = $this->calc->matrix_add($v_nest,$this->bias_i_h);
+
+                }
+                $prev_b_i_h = $h_error_term;
             }            
 
-            $temp = $this->calc->matrix_multiply($y_error_term,$hidden_output,true); 
-            $delta_h_o = $this->calc->matrix_add($temp,$delta_h_o);
-            $temp = $this->calc->matrix_multiply($this->lr , $delta_h_o) ;
-            $this->weight_h_o = $this->calc->matrix_add($temp,$this->weight_h_o);
-            //モーメンタム追加
-           $this->weight_h_o = $this->calc->matrix_add($this->calc->matrix_multiply($this->momentum, $prev_h_o),$this->weight_h_o);
+            $delta_h_o = $this->calc->matrix_multiply($y_error_term,$hidden_output,true); 
+            $grad = $this->calc->matrix_multiply($this->lr , $delta_h_o) ;
+            //モーメンタム追加 Nesterov Momentum
+            $v_h_o = $this->calc->matrix_add($this->calc->matrix_multiply($this->momentum, $prev_h_o),$grad);
+            //v_nesterov = v + mu * (v - v_prev)   keep going, extrapolate
+            $v_nest = $this->calc->matrix_add($v_h_o,$this->calc->matrix_multiply($this->momentum, $this->calc->matrix_sub($v_h_o,$prev_h_o)));
+            $this->weight_h_o = $this->calc->matrix_add($v_nest,$this->weight_h_o);
+
 
            if($this->bias){//Boバイアス配列の調整
-            $temp = $this->calc->matrix_multiply($this->lr , $y_error_term) ;
-            $this->bias_h_o = $this->calc->matrix_add($temp,$this->bias_h_o);            
+                $grad = $this->calc->matrix_multiply($this->lr , $y_error_term) ;
+                //モーメンタム追加 Nesterov Momentum
+                if(!empty($prev_b_h_o)){
+                    $v_h_o = $this->calc->matrix_add($this->calc->matrix_multiply($this->momentum, $prev_b_h_o),$grad);
+                    $v_nest = $this->calc->matrix_add($v_h_o,$this->calc->matrix_multiply($this->momentum, $this->calc->matrix_sub($v_h_o,$prev_b_h_o)));
+                    $this->bias_h_o = $this->calc->matrix_add($v_nest,$this->bias_h_o);
+                }
+                $prev_b_h_o = $y_error_term;            
         }
 
             //前回のデルタ配列（モーメンタム用）
