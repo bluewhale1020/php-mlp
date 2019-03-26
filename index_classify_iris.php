@@ -1,7 +1,9 @@
 <?php
 ini_set('display_errors', 'On');
 error_reporting(E_ALL | E_STRICT);
-
+//制限時間変更
+$default = ini_get('max_execution_time');
+set_time_limit(0);
 require './src/Utility.php';
 require './src/DatasetManager.php';
 // require 'src/TrainTestSplit.php';
@@ -16,16 +18,17 @@ use CrossValidation\TrainTestSplit;
 // momentum:0.2
 // lr_method:exponentialDecay
 
-$input_nodes = 4;
-$hidden_nodes = 9;
-$output_nodes = 1;
-$lr = 0.02;
-$active_func_name = 'relu';// tanh , relu , sigmoid
-$mlp = new NeuralNetwork($input_nodes,$hidden_nodes,$output_nodes,$lr,
-$active_func_name,true,0.2);
+//adam 最適lr:$lr = 0.001;
 
-$w_ih_before = $mlp->getWeightIH();
-$w_ho_before = $mlp->getWeightHO();
+// $input_nodes = 4;
+$hidden_nodes = 9;
+// $output_nodes = 1;
+$lr = 0.0006;
+$active_func_name = 'relu';// tanh , relu , sigmoid
+$mlp = new NeuralNetwork("sgd",$hidden_nodes,$lr,$active_func_name,true,0,true);
+
+// $w_ih_before = $mlp->getWeightIH();
+// $w_ho_before = $mlp->getWeightHO();
 
 // $progressData = [
   // 'Epochs'=>$epoch,
@@ -55,7 +58,7 @@ $split->run($dataset);
 //'constant''stepDecay' 'timeBaseDecay' 'exponentialDecay'
 
 $labels = true;
-$progressData = $mlp->train($dataset,200,$labels,"exponentialDecay");
+$progressData = $mlp->train($dataset,3000,$labels,"exponentialDecay");
 
 $g_labes = $g_vals = $g_val_vals = $g_lrs = '';
 $graph = $progressData['rates'];
@@ -214,12 +217,12 @@ $util = new Utility();
 
 <?php
 
-echo '<hr /><h1>Before</h1>';
+// echo '<hr /><h1>Before</h1>';
 
-$util->dispMatrix( $w_ih_before,"Weight_Input_Hidden");
-echo "<br />";
-$util->dispMatrix( $w_ho_before,"Weight_Hidden_Output");
-echo "<br />";
+// $util->dispMatrix( $w_ih_before,"Weight_Input_Hidden");
+// echo "<br />";
+// $util->dispMatrix( $w_ho_before,"Weight_Hidden_Output");
+// echo "<br />";
 
 echo '<hr /><h1>After</h1>';
 
@@ -324,3 +327,6 @@ echo "<br />";
 
 </body>
 </html>
+<?php
+set_time_limit($default);
+?>

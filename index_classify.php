@@ -21,16 +21,17 @@ use Dataset\DatasetManager;
 // lr:0.05 
 // momentum:0.2
 
-$input_nodes = 2;
-$hidden_nodes = 3;
-$output_nodes = 1;
-$lr = 0.2;
-$active_func_name = 'tanh';// tanh , relu , sigmoid
-$mlp = new NeuralNetwork($input_nodes,$hidden_nodes,$output_nodes,$lr,
-$active_func_name,true,0.5);
+//adam 最適lr:$lr = 0.0005;
 
-$w_ih_before = $mlp->getWeightIH();
-$w_ho_before = $mlp->getWeightHO();
+// $input_nodes = 2;
+$hidden_nodes = 3;
+// $output_nodes = 1;
+$lr = 0.02;
+$active_func_name = 'tanh';// tanh , relu , sigmoid
+$mlp = new NeuralNetwork("adam",$hidden_nodes,$lr,$active_func_name,true,0.5,true);
+
+// $w_ih_before = $mlp->getWeightIH();
+// $w_ho_before = $mlp->getWeightHO();
 
 // $progressData = [
   // 'Epochs'=>$epoch,
@@ -211,14 +212,14 @@ $util = new Utility();
 
 
 <?php
-echo '<hr /><h1>Before</h1>';
+// echo '<hr /><h1>Before</h1>';
 
-$util->dispMatrix( $w_ih_before,"Weight_Input_Hidden");
-echo "<br />";
-$util->dispMatrix( $w_ho_before,"Weight_Hidden_Output");
-echo "<br />";
+// $util->dispMatrix( $w_ih_before,"Weight_Input_Hidden");
+// echo "<br />";
+// $util->dispMatrix( $w_ho_before,"Weight_Hidden_Output");
+// echo "<br />";
 
-echo '<hr /><h1>After</h1>';
+echo '<hr /><h1>Weight Matrices after Training</h1>';
 
 $util->dispMatrix( $mlp->getWeightIH(),"Weight_Input_Hidden");
 echo "<br />";

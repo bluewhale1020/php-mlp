@@ -8,7 +8,7 @@ class DatasetManager
 {
 
     protected $column_names=[];
-
+    protected $num_of_features = 0;
     protected $features;
     protected $targets;
     protected $testFeatures;
@@ -53,6 +53,21 @@ class DatasetManager
 
         fclose($fp);
 
+        $this->num_of_features = $num_of_features;
+    }
+
+    public function getFeatureNumber(){
+        if(!empty($this->num_of_features)){
+            return $this->num_of_features;
+        }elseif(!empty($this->features)){
+            $this->num_of_features = count($this->features[0]);
+        }elseif(!empty($this->trainFeatures)){
+            $this->num_of_features = count($this->trainFeatures[0]);
+        }elseif(!empty($this->testFeatures)){
+            $this->num_of_features = count($this->testFeatures[0]);
+        }
+
+        return $this->num_of_features;
     }
 
     public function getColumnName(){

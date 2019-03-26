@@ -4,16 +4,26 @@ namespace Calc;
 
  require 'CalcMatrix.php';
  use CalcMatrix\CalcMatrix;
+ require 'CalcMatrixExt.php';
+ use CalcMatrix\CalcMatrixExt;
  use Exception;
 
 class Calc
 {
     public $calcMatrix;
+    protected $useExt;
 
-    public function __construct($calcMatrix = null)
+    public function __construct($calcMatrix = null,$auto_detect = true)
     {
         if(is_null($calcMatrix)){
-            $this->calcMatrix = new CalcMatrix();
+            if ($auto_detect and extension_loaded('matrix')) {
+                $this->calcMatrix = new CalcMatrixExt();
+                $this->useExt = true;
+            }else{
+                $this->calcMatrix = new CalcMatrix();
+                $this->useExt = false;
+            }            
+            
         }else{
             $this->calcMatrix = $calcMatrix;
         }
@@ -27,16 +37,38 @@ class Calc
         }        
         return $this->calcMatrix->multiply($matrix1,$matrix2);
     }
-    public function matrix_multiply($variable,$matrix,$newaxis = false,$cut_col = false){
+
+    public function matrix_multiply($variable,$matrix,$newaxis = false){
         //行列の要素の積を返す
-        if(is_array($variable)){
+        if(is_array($variable) or is_a($variable,"Matrix")){
             if($newaxis){//足りない要素を追加
-                $rows = $this->calcMatrix->countRow($variable);
-                $rows2 = $this->calcMatrix->countRow($matrix);  
-                if($rows != $rows2){
-                    throw new Exception("二つの行列の行数が異なります。", 1);
-                    
-                }             
+                if($this->useExt){//print_r($matrix->shape());
+                    $size = $matrix->shape();
+                    if($size[0] == 1 and $size[1] > 1){
+                        $matrix = $matrix->transpose();
+                    }
+                    // print_r($variable->shape());
+                    // print_r($matrix->shape());
+                    $rows = $this->calcMatrix->countRow($variable);
+                    $cols = $this->calcMatrix->countCol($matrix);  
+                    if($rows != $cols){
+                        throw new Exception("二つの行列のサイズが異なります。", 1);
+                        
+                    }                    
+                }else{
+                    // print_r($this->calcMatrix->countSize($variable));
+                    // print_r($this->calcMatrix->countSize($matrix));die();
+    
+                    $rows = $this->calcMatrix->countRow($variable);
+                    $rows2 = $this->calcMatrix->countRow($matrix);  
+                    if($rows != $rows2){
+                        throw new Exception("二つの行列の行数が異なります。", 1);
+                        
+                    }             
+
+                }
+
+          
                 $columns = $this->calcMatrix->countCol($variable);
                 $matrix = $this->expandColumns($matrix,$columns);
 
@@ -45,22 +77,23 @@ class Calc
                     $variable = $this->expandRows($variable,$rows2);                   
                 }
                 
-            }elseif($cut_col){//余る列をカット
-                $rows = $this->calcMatrix->countRow($variable);
-                $rows2 = $this->calcMatrix->countRow($matrix);  
-                if($rows != $rows2){
-                    throw new Exception("二つの行列の行数が異なります。", 1);
-                    
-                }
-                $columns = $this->calcMatrix->countCol($matrix);
-                $columns2 = $this->calcMatrix->countCol($variable);
-                if($columns < $columns2){
-                    $variable = $this->cutColumns($variable,$columns);
-                }elseif($columns > $columns2){
-                    $matrix = $this->cutColumns($matrix,$columns2);
-                }                
-
             }
+            // elseif($cut_col){//余る列をカット
+            //     $rows = $this->calcMatrix->countRow($variable);
+            //     $rows2 = $this->calcMatrix->countRow($matrix);  
+            //     if($rows != $rows2){
+            //         throw new Exception("二つの行列の行数が異なります。", 1);
+                    
+            //     }
+            //     $columns = $this->calcMatrix->countCol($matrix);
+            //     $columns2 = $this->calcMatrix->countCol($variable);
+            //     if($columns < $columns2){
+            //         $variable = $this->cutColumns($variable,$columns);
+            //     }elseif($columns > $columns2){
+            //         $matrix = $this->cutColumns($matrix,$columns2);
+            //     }                
+
+            // }
             
             return $this->calcMatrix->elem_multiply($variable,$matrix); 
 
@@ -96,6 +129,11 @@ class Calc
     }    
 
     public function expandRows($matrix,$num_row){
+
+        if($this->useExt){
+            return $matrix->expandRows($num_row);
+        }
+
         $newmatrix = [];       
             for ($i=0; $i < $num_row; $i++) { 
                 
@@ -105,28 +143,33 @@ class Calc
         return $newmatrix;
     }
 
-    public function cutColumns($matrix,$num_column){
+    // public function cutColumns($matrix,$num_column){
 
-        if(!is_array($matrix[0])){// [3,9,2];
-            array_pop($matrix);
-        }else{
-            // [[3,9,2]];
-            foreach($matrix as $key=>$row) {
-                foreach ($row as $idx => $value) {
-                    if($idx > ($num_column-1)){
-                        unset($matrix[$key][$idx]);
-                    }
+    //     if(!is_array($matrix[0])){// [3,9,2];
+    //         array_pop($matrix);
+    //     }else{
+    //         // [[3,9,2]];
+    //         foreach($matrix as $key=>$row) {
+    //             foreach ($row as $idx => $value) {
+    //                 if($idx > ($num_column-1)){
+    //                     unset($matrix[$key][$idx]);
+    //                 }
                     
-                }
+    //             }
                 
-             }        
+    //          }        
 
 
-        }
-        return $matrix;
-    }
+    //     }
+    //     return $matrix;
+    // }
 
     public function expandColumns($matrix,$num_column){
+
+        if($this->useExt){
+
+            return $matrix->expandColumns($num_column);
+        }
 
         if(!is_array($matrix[0])){// [3,9,2];
             return $this->expand1d_2d($matrix,$num_column);
@@ -188,6 +231,12 @@ class Calc
     }
 
     public function initDelta($weightArray){
+
+        if($this->useExt){
+            return $weightArray->zerosLike($weightArray);
+            // return Matrix::zerosLike();
+        }
+
         //$weightArrayと同型で、要素０の行列を返す
         list($rows,$cols) = $this->calcMatrix->countSize($weightArray);
         $deltaArray = [];
@@ -203,6 +252,12 @@ class Calc
     }   
 
     public function resetDelta($deltaArray){
+
+        if($this->useExt){
+            return $deltaArray->zerosLike($deltaArray);
+            // return Matrix::zerosLike($deltaArray);
+        }
+
         //$deltaArrayの要素を全て０にする
         list($rows,$cols) = $this->calcMatrix->countSize($deltaArray);
 
