@@ -4,6 +4,7 @@ error_reporting(E_ALL | E_STRICT);
 //制限時間変更
 $default = ini_get('max_execution_time');
 set_time_limit(0);
+ini_set('memory_limit', '256M');
 require './src/Utility.php';
 require './src/DatasetManager.php';
 // require 'src/TrainTestSplit.php';
@@ -23,9 +24,9 @@ use CrossValidation\TrainTestSplit;
 // $input_nodes = 4;
 $hidden_nodes = 9;
 // $output_nodes = 1;
-$lr = 0.0006;
+$lr = 0.02;
 $active_func_name = 'relu';// tanh , relu , sigmoid
-$mlp = new NeuralNetwork("sgd",$hidden_nodes,$lr,$active_func_name,true,0,true);
+$mlp = new NeuralNetwork("sgd",$hidden_nodes,$lr,$active_func_name,true,0.2,true);
 
 // $w_ih_before = $mlp->getWeightIH();
 // $w_ho_before = $mlp->getWeightHO();

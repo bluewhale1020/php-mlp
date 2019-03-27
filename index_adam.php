@@ -5,8 +5,10 @@ error_reporting(E_ALL | E_STRICT);
 require './src/Utility.php';
 use NeuralNetwork\NeuralNetwork;
 use Utility\Utility;
+
 require './src/DatasetManager.php';
 use Dataset\DatasetManager;
+
 //<< xor 問題 >>
 //tanhの最適設定
 // layer:2-3-1
@@ -26,12 +28,9 @@ use Dataset\DatasetManager;
 // $input_nodes = 2;
 $hidden_nodes = 3;
 // $output_nodes = 1;
-$lr = 0.01;
+$lr = 0.05;
 $active_func_name = 'relu';// tanh , relu , sigmoid
 $mlp = new NeuralNetwork("adam",$hidden_nodes,$lr,$active_func_name,true,0,true);
-
-// $w_ih_before = $mlp->getWeightIH();
-// $w_ho_before = $mlp->getWeightHO();
 
 // $progressData = [
   // 'Epochs'=>$epoch,
@@ -54,8 +53,13 @@ $dataset->setTestTargets($target);
 $dataset->setTrainFeatures($features);
 $dataset->setTrainTargets($target);
 
-$labels = true;
-$progressData = $mlp->train($dataset,3000,$labels,"stepDecay");
+// $dataset->setFeatures($features);
+// $dataset->setTargets($target);
+
+//学習率の低減方法 lr_method
+//'constant''stepDecay' 'timeBaseDecay' 'exponentialDecay'
+
+$progressData = $mlp->train($dataset,3000,false,"exponentialDecay");
 
 $g_labes = $g_vals = $g_val_vals = $g_lrs = '';
 $graph = $progressData['rates'];
@@ -82,7 +86,6 @@ $g_vals = trim($g_vals, ',');
 $g_val_vals = trim($g_val_vals, ',');
 $g_lrs = trim($g_lrs, ',');
 
-
 $util = new Utility();
 
 ?>
@@ -101,11 +104,12 @@ $util = new Utility();
 	</style>
 </head>
 <body>
-
 <br />
 <br />
 <hr />
+
 <div class="container">
+
 <div class="row">
     <div class="col-5 "  style="max-height: 500px;overflow-y:scroll;">
     <h2 class="">Progress List:</h2>  
@@ -133,11 +137,6 @@ $util = new Utility();
 	<li>Learning rate: <?= number_format($progressData['Learning rate'],10) ?></li>
 	<li>Epochs: <?= $progressData['Epochs'] ?></li>
 	<li>Execution time: <?= $progressData['Execution time'] ?> sec</li>
-  <li>Labels: <?php
-  if($labels){
-    $util->dispArray($progressData['Labels']);
-  }  ?></li>
-
 	</ul>
     </div>
     <div class="col-8">
@@ -179,7 +178,6 @@ $util = new Utility();
 
 
 </div>
-
 
 <br />
 <br />
@@ -267,21 +265,6 @@ echo "<br />";
           ]
         };
 
-        var areaChartData3 = {
-          labels: [<?= $g_labes ?>],
-          datasets: [
-            {
-              fillColor: "rgba(255,140,0,0.9)",
-              strokeColor: "rgba(255,140,0,0.8)",
-              pointColor: "#FF8C00",
-              pointStrokeColor: "rgba(255,140,0,1)",
-              pointHighlightFill: "#fff",
-              pointHighlightStroke: "rgba(255,140,0,1)",
-              data: [<?= $g_val_vals ?>],
-            }
-          ]
-        };         
-
         var areaChartOptions = {
            showScale: true,
            scaleShowGridLines: true,
@@ -301,8 +284,23 @@ echo "<br />";
            maintainAspectRatio: false,
            responsive: true,
          };
+
+         var areaChartData3 = {
+          labels: [<?= $g_labes ?>],
+          datasets: [
+            {
+              fillColor: "rgba(255,140,0,0.9)",
+              strokeColor: "rgba(255,140,0,0.8)",
+              pointColor: "#FF8C00",
+              pointStrokeColor: "rgba(255,140,0,1)",
+              pointHighlightFill: "#fff",
+              pointHighlightStroke: "rgba(255,140,0,1)",
+              data: [<?= $g_val_vals ?>],
+            }
+          ]
+        };         
 	
-         var lineChartCanvas = $("#lineChart").get(0).getContext("2d");
+	    var lineChartCanvas = $("#lineChart").get(0).getContext("2d");
 	    var lineChart = new Chart(lineChartCanvas);
 	    var lineChartOptions = areaChartOptions;
 	    lineChartOptions.datasetFill = false;
@@ -310,11 +308,11 @@ echo "<br />";
 
 	    var lineChartCanvas2 = $("#lineChart2").get(0).getContext("2d");
 	    var lineChart2 = new Chart(lineChartCanvas2);
-	    lineChart2.Line(areaChartData2, lineChartOptions); 
+	    lineChart2.Line(areaChartData2, lineChartOptions);    
 
 	    var lineChartCanvas3 = $("#lineChart3").get(0).getContext("2d");
 	    var lineChart3 = new Chart(lineChartCanvas3);
-	    lineChart3.Line(areaChartData3, lineChartOptions);      
+	    lineChart3.Line(areaChartData3, lineChartOptions);         
   });
 
 </script>

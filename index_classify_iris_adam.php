@@ -1,32 +1,30 @@
 <?php
 ini_set('display_errors', 'On');
 error_reporting(E_ALL | E_STRICT);
-
+//制限時間変更
+$default = ini_get('max_execution_time');
+set_time_limit(0);
+ini_set('memory_limit', '256M');
 require './src/Utility.php';
+require './src/DatasetManager.php';
+// require 'src/TrainTestSplit.php';
 use NeuralNetwork\NeuralNetwork;
 use Utility\Utility;
-require './src/DatasetManager.php';
 use Dataset\DatasetManager;
-//<< xor 問題 >>
-//tanhの最適設定
-// layer:2-3-1
-// lr:0.2 
-// momentum:0.3  0.4以上でweightの値が発散するリスク
-//sigmoidの最適設定
-// layer:2-3-1
-// lr:0.2 
-// momentum:0.5
-//reluの最適設定
-// layer:2-3-1
-// lr:0.05 
+use CrossValidation\TrainTestSplit;
+//<< iris 問題 >>
+//reluの設定
+// layer:4-9-1
+// lr:0.02 
 // momentum:0.2
+// lr_method:exponentialDecay
 
-//adam 最適lr:$lr = 0.0005;
+//adam 最適lr:$lr = 0.001;
 
-// $input_nodes = 2;
-$hidden_nodes = 3;
+// $input_nodes = 4;
+$hidden_nodes = 9;
 // $output_nodes = 1;
-$lr = 0.01;
+$lr = 0.02;
 $active_func_name = 'relu';// tanh , relu , sigmoid
 $mlp = new NeuralNetwork("adam",$hidden_nodes,$lr,$active_func_name,true,0,true);
 
@@ -44,18 +42,24 @@ $mlp = new NeuralNetwork("adam",$hidden_nodes,$lr,$active_func_name,true,0,true)
   // 'point_checker'=>$points_checker,
   // 'Execution time'=>$execution_time
 // ];
-$features =[[0,1],[1,0],[1,1],[0,0]];
-$target = [1,1,0,0];
+$path = "./dataset/iris.csv";
 
-$dataset = new DatasetManager();
+$dataset = new DatasetManager($path,true);
 
-$dataset->setTestFeatures($features);
-$dataset->setTestTargets($target);
-$dataset->setTrainFeatures($features);
-$dataset->setTrainTargets($target);
+$split = new TrainTestSplit();
+
+$split->run($dataset);
+// $train = $result["train"];
+// $test = $result["test"];
+//  list($train,$test)
+// $dataset->setFeatures($train[0]);
+// $dataset->setTargets($train[1]);
+
+//学習率の低減方法 lr_method
+//'constant''stepDecay' 'timeBaseDecay' 'exponentialDecay'
 
 $labels = true;
-$progressData = $mlp->train($dataset,3000,$labels,"stepDecay");
+$progressData = $mlp->train($dataset,3000,$labels,"exponentialDecay");
 
 $g_labes = $g_vals = $g_val_vals = $g_lrs = '';
 $graph = $progressData['rates'];
@@ -73,6 +77,7 @@ foreach($graph as $num => $data) {
 
     $g_lrs .= $lr . ',';
 }
+
 foreach ($val_graph as $key => $value) {
   $g_val_vals .= (round( $value, 2)) . ',';
 }
@@ -141,7 +146,7 @@ $util = new Utility();
 	</ul>
     </div>
     <div class="col-8">
-	<h2 class="text-center">Loss History: <?= ucwords($progressData['activation_func']) ?></h2>
+	<h2 class="text-center">Train Loss History: <?= ucwords($progressData['activation_func']) ?></h2>
 
 <div class="chart" style="width:600px; margin:20px auto;">
 	<canvas height="200" id="lineChart" style="height:400px; margin:20px auto;"></canvas>
@@ -185,7 +190,7 @@ $util = new Utility();
 <br />
 <hr />
 <div class="row">
-    <div class="col-4 alert alert-info" style="overflow-y:scroll;">
+    <div class="col-4 alert alert-info" style="max-height: 500px;overflow-y:scroll;">
 
     <?php
 	echo '<hr /><h1>Prediction:</h1>';
@@ -212,6 +217,7 @@ $util = new Utility();
 
 
 <?php
+
 // echo '<hr /><h1>Before</h1>';
 
 // $util->dispMatrix( $w_ih_before,"Weight_Input_Hidden");
@@ -219,7 +225,7 @@ $util = new Utility();
 // $util->dispMatrix( $w_ho_before,"Weight_Hidden_Output");
 // echo "<br />";
 
-echo '<hr /><h1>Weight Matrices after Training</h1>';
+echo '<hr /><h1>After</h1>';
 
 $util->dispMatrix( $mlp->getWeightIH(),"Weight_Input_Hidden");
 echo "<br />";
@@ -280,7 +286,7 @@ echo "<br />";
               data: [<?= $g_val_vals ?>],
             }
           ]
-        };         
+        };
 
         var areaChartOptions = {
            showScale: true,
@@ -314,7 +320,7 @@ echo "<br />";
 
 	    var lineChartCanvas3 = $("#lineChart3").get(0).getContext("2d");
 	    var lineChart3 = new Chart(lineChartCanvas3);
-	    lineChart3.Line(areaChartData3, lineChartOptions);      
+	    lineChart3.Line(areaChartData3, lineChartOptions);       
   });
 
 </script>
@@ -322,3 +328,6 @@ echo "<br />";
 
 </body>
 </html>
+<?php
+set_time_limit($default);
+?>

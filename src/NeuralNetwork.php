@@ -180,12 +180,14 @@ class NeuralNetwork
                           
             $validation_loss = $this->onEpochEnd($idx,$dataset);
 
-            $this->trainStat->stackLossHistory($idx,$train_loss,$validation_loss,$this->lr);
-
-            if($train_loss < 0.05 or $validation_loss < 0.05 or $train_loss > 1000){
+    
+            if($train_loss < 0.07 and $validation_loss < 0.12 or $train_loss > 1000){
                 $this->trainStat->setEpoch($idx+1);
+                $this->trainStat->stackLossHistory($idx,$train_loss,$validation_loss,$this->lr);
                 break;
             }
+            $this->trainStat->stackLossHistory($idx,$train_loss,$validation_loss,$this->lr);
+
         }
 
         return $this->onTrainEnd();
@@ -358,11 +360,11 @@ class NeuralNetwork
                     $prev_b_h_o = $this->sgd_optimizer($bias_h_o,$y_error_term,$prev_b_h_o);
                 } 
             }elseif($this->optimizer == 'adam'){
-                list($m_i_h,$v_i_h) = $this->adam_optimizer($weight_i_h,$m_i_h,$v_i_h,$delta_i_h);
-                list($m_h_o,$v_h_o) = $this->adam_optimizer($weight_h_o,$m_h_o,$v_h_o,$delta_h_o);
+                list($weight_i_h,$m_i_h,$v_i_h) = $this->adam_optimizer($weight_i_h,$m_i_h,$v_i_h,$delta_i_h);
+                list($weight_h_o,$m_h_o,$v_h_o) = $this->adam_optimizer($weight_h_o,$m_h_o,$v_h_o,$delta_h_o);
                 if($this->bias){//Bh/Boバイアス配列の調整
-                    list($mb_i_h,$vb_i_h) = $this->adam_optimizer($bias_i_h,$mb_i_h,$vb_i_h,$h_error_term);
-                    list($mb_h_o,$vb_h_o) = $this->adam_optimizer($bias_h_o,$mb_h_o,$vb_h_o,$y_error_term);
+                    list($bias_i_h,$mb_i_h,$vb_i_h) = $this->adam_optimizer($bias_i_h,$mb_i_h,$vb_i_h,$h_error_term);
+                    list($bias_h_o,$mb_h_o,$vb_h_o) = $this->adam_optimizer($bias_h_o,$mb_h_o,$vb_h_o,$y_error_term);
                     // $prev_b_i_h = $this->sgd_optimizer($this->bias_i_h,$h_error_term,$prev_b_i_h);
                     // $prev_b_h_o = $this->sgd_optimizer($this->bias_h_o,$y_error_term,$prev_b_h_o);
                 }     
@@ -476,11 +478,11 @@ class NeuralNetwork
                     $prev_b_h_o = $this->sgd_optimizer($this->bias_h_o,$y_error_term,$prev_b_h_o);
                 } 
             }elseif($this->optimizer == 'adam'){
-                list($m_i_h,$v_i_h) = $this->adam_optimizer($this->weight_i_h,$m_i_h,$v_i_h,$delta_i_h);
-                list($m_h_o,$v_h_o) = $this->adam_optimizer($this->weight_h_o,$m_h_o,$v_h_o,$delta_h_o);
+                list($this->weight_i_h,$m_i_h,$v_i_h) = $this->adam_optimizer($this->weight_i_h,$m_i_h,$v_i_h,$delta_i_h);
+                list($this->weight_h_o,$m_h_o,$v_h_o) = $this->adam_optimizer($this->weight_h_o,$m_h_o,$v_h_o,$delta_h_o);
                 if($this->bias){//Bh/Boバイアス配列の調整
-                    list($mb_i_h,$vb_i_h) = $this->adam_optimizer($this->bias_i_h,$mb_i_h,$vb_i_h,$h_error_term);
-                    list($mb_h_o,$vb_h_o) = $this->adam_optimizer($this->bias_h_o,$mb_h_o,$vb_h_o,$y_error_term);
+                    list($this->bias_i_h,$mb_i_h,$vb_i_h) = $this->adam_optimizer($this->bias_i_h,$mb_i_h,$vb_i_h,$h_error_term);
+                    list($this->bias_h_o,$mb_h_o,$vb_h_o) = $this->adam_optimizer($this->bias_h_o,$mb_h_o,$vb_h_o,$y_error_term);
                     // $prev_b_i_h = $this->sgd_optimizer($this->bias_i_h,$h_error_term,$prev_b_i_h);
                     // $prev_b_h_o = $this->sgd_optimizer($this->bias_h_o,$y_error_term,$prev_b_h_o);
                 }     
@@ -529,7 +531,8 @@ class NeuralNetwork
         $this->betaParams['beta1_pt'] = 0.9;
         $this->betaParams['beta2_pt'] = 0.999;
     }
-    protected function adam_optimizer(&$Wt,$Mt_1,$Vt_1,$grad){
+    protected function adam_optimizer($Wt,$Mt_1,$Vt_1,$grad){
+
         if(empty($Mt_1) and empty($Vt_1)){
             $Vt_1 = $Mt_1 = $this->calc->initDelta($grad);      
         }
@@ -557,7 +560,7 @@ class NeuralNetwork
         $this->betaParams['beta1_pt'] *= $this->betaParams['beta1'];
         $this->betaParams['beta2_pt'] *= $this->betaParams['beta2'];
 
-        return [$Mt,$Vt];
+        return [$Wt,$Mt,$Vt];
     }
 
     protected function adjustLr($Vt){
